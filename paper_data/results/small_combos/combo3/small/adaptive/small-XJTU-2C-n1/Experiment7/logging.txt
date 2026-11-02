@@ -1,0 +1,119 @@
+2026-09-16 00:42:10,897 - INFO - [Train] epoch:1 lr:0.002000 total:1.145273 data:0.955427 operator:0.378360 invariant:0.053984 monotone:0.003331
+2026-09-16 00:42:10,913 - INFO - [Test] MSE:0.77588600 MAE:0.870398 MAPE:0.940127 RMSE:0.880844
+2026-09-16 00:42:10,913 - INFO - [Train] epoch:2 lr:0.002276 total:0.838557 data:0.702508 operator:0.270544 invariant:0.051879 monotone:0.003882
+2026-09-16 00:42:10,929 - INFO - [Test] MSE:0.56401420 MAE:0.703543 MAPE:0.768536 RMSE:0.751009
+2026-09-16 00:42:10,944 - INFO - [Train] epoch:3 lr:0.002552 total:0.617772 data:0.506750 operator:0.220230 invariant:0.050694 monotone:0.004532
+2026-09-16 00:42:10,944 - INFO - [Test] MSE:0.40010580 MAE:0.532453 MAPE:0.589072 RMSE:0.632539
+2026-09-16 00:42:10,960 - INFO - [Train] epoch:4 lr:0.002828 total:0.435670 data:0.349779 operator:0.169560 invariant:0.049913 monotone:0.005556
+2026-09-16 00:42:10,972 - INFO - [Test] MSE:0.26421171 MAE:0.380342 MAPE:0.423335 RMSE:0.514015
+2026-09-16 00:42:10,990 - INFO - [Train] epoch:5 lr:0.003103 total:0.314019 data:0.236400 operator:0.152610 invariant:0.049650 monotone:0.006568
+2026-09-16 00:42:11,001 - INFO - [Test] MSE:0.16992205 MAE:0.315356 MAPE:0.347197 RMSE:0.412216
+2026-09-16 00:42:11,013 - INFO - [Train] epoch:6 lr:0.003379 total:0.235097 data:0.166193 operator:0.135277 invariant:0.052002 monotone:0.006331
+2026-09-16 00:42:11,021 - INFO - [Test] MSE:0.09949260 MAE:0.271323 MAPE:0.294434 RMSE:0.315424
+2026-09-16 00:42:11,033 - INFO - [Train] epoch:7 lr:0.003655 total:0.144919 data:0.070457 operator:0.145240 invariant:0.052620 monotone:0.009213
+2026-09-16 00:42:11,043 - INFO - [Test] MSE:0.06482289 MAE:0.211521 MAPE:0.228604 RMSE:0.254603
+2026-09-16 00:42:11,053 - INFO - [Train] epoch:8 lr:0.003931 total:0.129745 data:0.056903 operator:0.142052 invariant:0.053358 monotone:0.009080
+2026-09-16 00:42:11,063 - INFO - [Test] MSE:0.07289403 MAE:0.227776 MAPE:0.248492 RMSE:0.269989
+2026-09-16 00:42:11,073 - INFO - [Train] epoch:9 lr:0.004207 total:0.123224 data:0.055184 operator:0.132773 invariant:0.052914 monotone:0.008269
+2026-09-16 00:42:11,083 - INFO - [Test] MSE:0.05306978 MAE:0.196632 MAPE:0.214470 RMSE:0.230369
+2026-09-16 00:42:11,093 - INFO - [Train] epoch:10 lr:0.004483 total:0.090184 data:0.032713 operator:0.112443 invariant:0.050478 monotone:0.006244
+2026-09-16 00:42:11,101 - INFO - [Test] MSE:0.02557069 MAE:0.139174 MAPE:0.150775 RMSE:0.159908
+2026-09-16 00:42:11,113 - INFO - [Train] epoch:11 lr:0.004759 total:0.063177 data:0.017644 operator:0.088748 invariant:0.052552 monotone:0.005797
+2026-09-16 00:42:11,123 - INFO - [Test] MSE:0.00951315 MAE:0.080836 MAPE:0.087073 RMSE:0.097535
+2026-09-16 00:42:11,133 - INFO - [Train] epoch:12 lr:0.005034 total:0.045347 data:0.013139 operator:0.062629 invariant:0.051227 monotone:0.004470
+2026-09-16 00:42:11,149 - INFO - [Test] MSE:0.00336300 MAE:0.045049 MAPE:0.048908 RMSE:0.057991
+2026-09-16 00:42:11,162 - INFO - [Train] epoch:13 lr:0.005310 total:0.041763 data:0.011432 operator:0.059254 invariant:0.052103 monotone:0.003519
+2026-09-16 00:42:11,172 - INFO - [Train] epoch:14 lr:0.005586 total:0.037450 data:0.010463 operator:0.052904 invariant:0.052234 monotone:0.002672
+2026-09-16 00:42:11,182 - INFO - [Test] MSE:0.00220460 MAE:0.036864 MAPE:0.039692 RMSE:0.046953
+2026-09-16 00:42:11,192 - INFO - [Train] epoch:15 lr:0.005862 total:0.027225 data:0.007073 operator:0.038903 invariant:0.052747 monotone:0.003501
+2026-09-16 00:42:11,204 - INFO - [Train] epoch:16 lr:0.006138 total:0.025371 data:0.007182 operator:0.035203 invariant:0.049731 monotone:0.002936
+2026-09-16 00:42:11,212 - INFO - [Train] epoch:17 lr:0.006414 total:0.021387 data:0.006054 operator:0.029488 invariant:0.054550 monotone:0.002949
+2026-09-16 00:42:11,232 - INFO - [Train] epoch:18 lr:0.006690 total:0.017911 data:0.004846 operator:0.025137 invariant:0.052145 monotone:0.002480
+2026-09-16 00:42:11,242 - INFO - [Test] MSE:0.00118644 MAE:0.028367 MAPE:0.030733 RMSE:0.034445
+2026-09-16 00:42:11,242 - INFO - [Train] epoch:19 lr:0.006966 total:0.016648 data:0.005439 operator:0.021364 invariant:0.056359 monotone:0.002640
+2026-09-16 00:42:11,261 - INFO - [Test] MSE:0.00057412 MAE:0.019424 MAPE:0.020949 RMSE:0.023961
+2026-09-16 00:42:11,261 - INFO - [Train] epoch:20 lr:0.007241 total:0.013471 data:0.003053 operator:0.019966 invariant:0.051973 monotone:0.002174
+2026-09-16 00:42:11,277 - INFO - [Train] epoch:21 lr:0.007517 total:0.011495 data:0.003262 operator:0.015519 invariant:0.047569 monotone:0.002370
+2026-09-16 00:42:11,292 - INFO - [Train] epoch:22 lr:0.007793 total:0.009881 data:0.002847 operator:0.013168 invariant:0.049356 monotone:0.002248
+2026-09-16 00:42:11,308 - INFO - [Train] epoch:23 lr:0.008069 total:0.008946 data:0.002229 operator:0.012631 invariant:0.052159 monotone:0.002009
+2026-09-16 00:42:11,308 - INFO - [Test] MSE:0.00054813 MAE:0.020290 MAPE:0.022010 RMSE:0.023412
+2026-09-16 00:42:11,324 - INFO - [Train] epoch:24 lr:0.008345 total:0.008153 data:0.002205 operator:0.011036 invariant:0.051870 monotone:0.002151
+2026-09-16 00:42:11,339 - INFO - [Test] MSE:0.00022055 MAE:0.011780 MAPE:0.012825 RMSE:0.014851
+2026-09-16 00:42:11,343 - INFO - [Train] epoch:25 lr:0.008621 total:0.007577 data:0.002382 operator:0.009658 invariant:0.051196 monotone:0.001831
+2026-09-16 00:42:11,358 - INFO - [Train] epoch:26 lr:0.008897 total:0.006913 data:0.002128 operator:0.008887 invariant:0.051468 monotone:0.001710
+2026-09-16 00:42:11,374 - INFO - [Train] epoch:27 lr:0.009172 total:0.005952 data:0.001599 operator:0.008056 invariant:0.048785 monotone:0.001626
+2026-09-16 00:42:11,390 - INFO - [Train] epoch:28 lr:0.009448 total:0.005373 data:0.001509 operator:0.007076 invariant:0.053844 monotone:0.001628
+2026-09-16 00:42:11,398 - INFO - [Train] epoch:29 lr:0.009724 total:0.004974 data:0.001407 operator:0.006496 invariant:0.051482 monotone:0.001592
+2026-09-16 00:42:11,413 - INFO - [Train] epoch:30 lr:0.010000 total:0.004870 data:0.001305 operator:0.006590 invariant:0.051868 monotone:0.001348
+2026-09-16 00:42:11,429 - INFO - [Test] MSE:0.00022010 MAE:0.011759 MAPE:0.012696 RMSE:0.014836
+2026-09-16 00:42:11,443 - INFO - [Train] epoch:31 lr:0.010000 total:0.004560 data:0.001114 operator:0.006375 invariant:0.048928 monotone:0.001295
+2026-09-16 00:42:11,459 - INFO - [Train] epoch:32 lr:0.009999 total:0.003807 data:0.000917 operator:0.005314 invariant:0.051407 monotone:0.001165
+2026-09-16 00:42:11,459 - INFO - [Train] epoch:33 lr:0.009997 total:0.003900 data:0.001104 operator:0.005063 invariant:0.054475 monotone:0.001322
+2026-09-16 00:42:11,474 - INFO - [Train] epoch:34 lr:0.009992 total:0.003633 data:0.000853 operator:0.005070 invariant:0.053888 monotone:0.001224
+2026-09-16 00:42:11,490 - INFO - [Test] MSE:0.00014485 MAE:0.008642 MAPE:0.009423 RMSE:0.012035
+2026-09-16 00:42:11,490 - INFO - [Train] epoch:35 lr:0.009987 total:0.003256 data:0.000981 operator:0.004031 invariant:0.048253 monotone:0.001299
+2026-09-16 00:42:11,505 - INFO - [Train] epoch:36 lr:0.009979 total:0.003312 data:0.000914 operator:0.004319 invariant:0.052933 monotone:0.001192
+2026-09-16 00:42:11,521 - INFO - [Train] epoch:37 lr:0.009970 total:0.003159 data:0.000826 operator:0.004260 invariant:0.050357 monotone:0.001015
+2026-09-16 00:42:11,537 - INFO - [Train] epoch:38 lr:0.009959 total:0.003029 data:0.001017 operator:0.003613 invariant:0.051101 monotone:0.001024
+2026-09-16 00:42:11,543 - INFO - [Train] epoch:39 lr:0.009947 total:0.002696 data:0.000667 operator:0.003696 invariant:0.052966 monotone:0.000906
+2026-09-16 00:42:11,559 - INFO - [Train] epoch:40 lr:0.009932 total:0.002595 data:0.000616 operator:0.003610 invariant:0.049748 monotone:0.000871
+2026-09-16 00:42:11,559 - INFO - [Train] epoch:41 lr:0.009917 total:0.002461 data:0.000750 operator:0.003026 invariant:0.052405 monotone:0.000993
+2026-09-16 00:42:11,579 - INFO - [Train] epoch:42 lr:0.009899 total:0.002130 data:0.000488 operator:0.002955 invariant:0.050018 monotone:0.000818
+2026-09-16 00:42:11,579 - INFO - [Test] MSE:0.00020667 MAE:0.011465 MAPE:0.012315 RMSE:0.014376
+2026-09-16 00:42:11,595 - INFO - [Train] epoch:43 lr:0.009880 total:0.002304 data:0.000646 operator:0.002912 invariant:0.049355 monotone:0.001009
+2026-09-16 00:42:11,611 - INFO - [Train] epoch:44 lr:0.009859 total:0.002043 data:0.000583 operator:0.002558 invariant:0.052703 monotone:0.000906
+2026-09-16 00:42:11,611 - INFO - [Test] MSE:0.00020157 MAE:0.011173 MAPE:0.011993 RMSE:0.014197
+2026-09-16 00:42:11,627 - INFO - [Train] epoch:45 lr:0.009837 total:0.001925 data:0.000389 operator:0.002796 invariant:0.052253 monotone:0.000691
+2026-09-16 00:42:11,643 - INFO - [Train] epoch:46 lr:0.009813 total:0.001926 data:0.000462 operator:0.002586 invariant:0.051235 monotone:0.000856
+2026-09-16 00:42:11,643 - INFO - [Test] MSE:0.00014760 MAE:0.008910 MAPE:0.009639 RMSE:0.012149
+2026-09-16 00:42:11,659 - INFO - [Train] epoch:47 lr:0.009787 total:0.001699 data:0.000365 operator:0.002361 invariant:0.051981 monotone:0.000767
+2026-09-16 00:42:11,674 - INFO - [Train] epoch:48 lr:0.009760 total:0.001700 data:0.000395 operator:0.002291 invariant:0.052790 monotone:0.000799
+2026-09-16 00:42:11,690 - INFO - [Train] epoch:49 lr:0.009731 total:0.001595 data:0.000356 operator:0.002139 invariant:0.051357 monotone:0.000851
+2026-09-16 00:42:11,706 - INFO - [Train] epoch:50 lr:0.009701 total:0.001496 data:0.000376 operator:0.001981 invariant:0.052926 monotone:0.000650
+2026-09-16 00:42:11,721 - INFO - [Train] epoch:51 lr:0.009669 total:0.001565 data:0.000315 operator:0.002222 invariant:0.050384 monotone:0.000691
+2026-09-16 00:42:11,737 - INFO - [Train] epoch:52 lr:0.009636 total:0.001560 data:0.000375 operator:0.002088 invariant:0.053185 monotone:0.000703
+2026-09-16 00:42:11,743 - INFO - [Train] epoch:53 lr:0.009601 total:0.001425 data:0.000327 operator:0.001908 invariant:0.054286 monotone:0.000719
+2026-09-16 00:42:11,759 - INFO - [Train] epoch:54 lr:0.009564 total:0.001316 data:0.000335 operator:0.001720 invariant:0.052740 monotone:0.000605
+2026-09-16 00:42:11,775 - INFO - [Train] epoch:55 lr:0.009526 total:0.001378 data:0.000316 operator:0.001847 invariant:0.051712 monotone:0.000691
+2026-09-16 00:42:11,793 - INFO - [Test] MSE:0.00012148 MAE:0.008099 MAPE:0.008753 RMSE:0.011022
+2026-09-16 00:42:11,809 - INFO - [Train] epoch:56 lr:0.009486 total:0.001288 data:0.000298 operator:0.001706 invariant:0.051907 monotone:0.000683
+2026-09-16 00:42:11,825 - INFO - [Train] epoch:57 lr:0.009445 total:0.001293 data:0.000377 operator:0.001591 invariant:0.051542 monotone:0.000603
+2026-09-16 00:42:11,840 - INFO - [Train] epoch:58 lr:0.009403 total:0.001152 data:0.000243 operator:0.001623 invariant:0.052421 monotone:0.000488
+2026-09-16 00:42:11,844 - INFO - [Train] epoch:59 lr:0.009359 total:0.001148 data:0.000296 operator:0.001457 invariant:0.048831 monotone:0.000620
+2026-09-16 00:42:11,859 - INFO - [Train] epoch:60 lr:0.009313 total:0.001109 data:0.000304 operator:0.001386 invariant:0.052753 monotone:0.000560
+2026-09-16 00:42:11,875 - INFO - [Train] epoch:61 lr:0.009266 total:0.001067 data:0.000220 operator:0.001519 invariant:0.055491 monotone:0.000440
+2026-09-16 00:42:11,875 - INFO - [Train] epoch:62 lr:0.009218 total:0.001121 data:0.000310 operator:0.001409 invariant:0.051093 monotone:0.000531
+2026-09-16 00:42:11,898 - INFO - [Test] MSE:0.00012971 MAE:0.008370 MAPE:0.009080 RMSE:0.011389
+2026-09-16 00:42:11,898 - INFO - [Train] epoch:63 lr:0.009168 total:0.001086 data:0.000228 operator:0.001486 invariant:0.051124 monotone:0.000575
+2026-09-16 00:42:11,913 - INFO - [Train] epoch:64 lr:0.009117 total:0.001007 data:0.000258 operator:0.001264 invariant:0.053816 monotone:0.000582
+2026-09-16 00:42:11,929 - INFO - [Train] epoch:65 lr:0.009064 total:0.000942 data:0.000228 operator:0.001258 invariant:0.052808 monotone:0.000425
+2026-09-16 00:42:11,944 - INFO - [Train] epoch:66 lr:0.009010 total:0.001010 data:0.000258 operator:0.001286 invariant:0.053054 monotone:0.000544
+2026-09-16 00:42:11,960 - INFO - [Train] epoch:67 lr:0.008955 total:0.001049 data:0.000231 operator:0.001380 invariant:0.054083 monotone:0.000639
+2026-09-16 00:42:11,960 - INFO - [Train] epoch:68 lr:0.008898 total:0.000883 data:0.000198 operator:0.001157 invariant:0.054827 monotone:0.000537
+2026-09-16 00:42:11,975 - INFO - [Train] epoch:69 lr:0.008841 total:0.000921 data:0.000249 operator:0.001124 invariant:0.053326 monotone:0.000546
+2026-09-16 00:42:11,991 - INFO - [Train] epoch:70 lr:0.008782 total:0.000858 data:0.000196 operator:0.001104 invariant:0.051822 monotone:0.000546
+2026-09-16 00:42:12,006 - INFO - [Train] epoch:71 lr:0.008721 total:0.000830 data:0.000181 operator:0.001131 invariant:0.053524 monotone:0.000413
+2026-09-16 00:42:12,023 - INFO - [Train] epoch:72 lr:0.008660 total:0.000962 data:0.000216 operator:0.001249 invariant:0.053544 monotone:0.000608
+2026-09-16 00:42:12,038 - INFO - [Test] MSE:0.00011035 MAE:0.007687 MAPE:0.008321 RMSE:0.010505
+2026-09-16 00:42:12,044 - INFO - [Train] epoch:73 lr:0.008597 total:0.000854 data:0.000198 operator:0.001088 invariant:0.050605 monotone:0.000560
+2026-09-16 00:42:12,059 - INFO - [Train] epoch:74 lr:0.008533 total:0.000875 data:0.000211 operator:0.001169 invariant:0.054091 monotone:0.000398
+2026-09-16 00:42:12,075 - INFO - [Train] epoch:75 lr:0.008467 total:0.000816 data:0.000199 operator:0.001015 invariant:0.054604 monotone:0.000549
+2026-09-16 00:42:12,075 - INFO - [Train] epoch:76 lr:0.008401 total:0.000827 data:0.000182 operator:0.001119 invariant:0.051635 monotone:0.000428
+2026-09-16 00:42:12,091 - INFO - [Train] epoch:77 lr:0.008334 total:0.000824 data:0.000224 operator:0.001009 invariant:0.052977 monotone:0.000475
+2026-09-16 00:42:12,106 - INFO - [Train] epoch:78 lr:0.008265 total:0.000856 data:0.000205 operator:0.001123 invariant:0.053902 monotone:0.000448
+2026-09-16 00:42:12,106 - INFO - [Train] epoch:79 lr:0.008195 total:0.000728 data:0.000177 operator:0.000900 invariant:0.051505 monotone:0.000504
+2026-09-16 00:42:12,122 - INFO - [Train] epoch:80 lr:0.008125 total:0.000771 data:0.000206 operator:0.000932 invariant:0.052390 monotone:0.000494
+2026-09-16 00:42:12,144 - INFO - [Train] epoch:81 lr:0.008053 total:0.000746 data:0.000185 operator:0.000923 invariant:0.051196 monotone:0.000499
+2026-09-16 00:42:12,160 - INFO - [Train] epoch:82 lr:0.007980 total:0.000761 data:0.000177 operator:0.000980 invariant:0.050918 monotone:0.000467
+2026-09-16 00:42:12,175 - INFO - [Train] epoch:83 lr:0.007906 total:0.000828 data:0.000182 operator:0.001066 invariant:0.052736 monotone:0.000564
+2026-09-16 00:42:12,191 - INFO - [Train] epoch:84 lr:0.007832 total:0.000750 data:0.000215 operator:0.000897 invariant:0.050292 monotone:0.000435
+2026-09-16 00:42:12,207 - INFO - [Train] epoch:85 lr:0.007756 total:0.000748 data:0.000176 operator:0.000971 invariant:0.050952 monotone:0.000433
+2026-09-16 00:42:12,223 - INFO - [Train] epoch:86 lr:0.007680 total:0.000746 data:0.000194 operator:0.000951 invariant:0.051615 monotone:0.000379
+2026-09-16 00:42:12,244 - INFO - [Train] epoch:87 lr:0.007602 total:0.000784 data:0.000180 operator:0.000992 invariant:0.054051 monotone:0.000539
+2026-09-16 00:42:12,260 - INFO - [Train] epoch:88 lr:0.007524 total:0.000731 data:0.000149 operator:0.000997 invariant:0.052238 monotone:0.000420
+2026-09-16 00:42:12,275 - INFO - [Train] epoch:89 lr:0.007445 total:0.000690 data:0.000165 operator:0.000897 invariant:0.050985 monotone:0.000382
+2026-09-16 00:42:12,275 - INFO - [Train] epoch:90 lr:0.007365 total:0.000709 data:0.000175 operator:0.000873 invariant:0.051808 monotone:0.000487
+2026-09-16 00:42:12,291 - INFO - [Train] epoch:91 lr:0.007284 total:0.000678 data:0.000135 operator:0.000922 invariant:0.053691 monotone:0.000410
+2026-09-16 00:42:12,306 - INFO - [Train] epoch:92 lr:0.007203 total:0.000641 data:0.000168 operator:0.000783 invariant:0.054697 monotone:0.000411
+2026-09-16 00:42:12,322 - INFO - [Train] epoch:93 lr:0.007121 total:0.000709 data:0.000147 operator:0.000910 invariant:0.053209 monotone:0.000539
+2026-09-16 00:42:12,322 - INFO - early stop at epoch 93
