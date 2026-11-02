@@ -111,6 +111,8 @@ figures/                   paper figure pipeline: data/ (nine tidy CSVs behind f
                            ppt/ (Fig 1 architecture sources)
 paper_data/                seeded per-run predictions + aggregated summaries
                            behind every table/figure (see paper_data/README.md)
+                           a4_campaign/ holds the runs the manuscript reports;
+                           results/ and evaluation/ hold an earlier replicate
 ```
 
 ## Installation
