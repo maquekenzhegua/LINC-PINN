@@ -35,7 +35,7 @@ def get_args():
     parser.add_argument('--gamma', type=float, default=0.02, help='monotonicity penalty weight (final paper config)')
 
     parser.add_argument('--log_dir', type=str, default='logging.txt', help='log dir, if None, do not save')
-    parser.add_argument('--save_folder', type=str, default='results/AdaptiveInvariantPINN/MIT', help='save folder')
+    parser.add_argument('--save_folder', type=str, default='results/LincPINN/MIT', help='save folder')
 
     args = parser.parse_args()
 
@@ -67,7 +67,7 @@ def load_MIT_data(args,small_sample=None):
 def main():
     args = get_args()
     for e in range(10):
-        setattr(args, 'save_folder', f'results/AdaptiveInvariantPINN/MIT/Experiment{e + 1}')
+        setattr(args, 'save_folder', f'results/LincPINN/MIT/Experiment{e + 1}')
         if not os.path.exists(args.save_folder):
             os.makedirs(args.save_folder)
 
@@ -80,7 +80,7 @@ def small_sample():
     num_battery = 2
     for e in range(10):
         setattr(args, 'save_folder',
-                f'results/AdaptiveInvariantPINN/MIT-small-sample-{num_battery}/Experiment{e + 1}')
+                f'results/LincPINN/MIT-small-sample-{num_battery}/Experiment{e + 1}')
         setattr(args, 'batch_size', 128)
         if not os.path.exists(args.save_folder):
             os.makedirs(args.save_folder)

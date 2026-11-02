@@ -7,7 +7,7 @@ Both models now follow the same two-stage protocol:
   orig     load the pretrained source PINN (``pretrained model/``), freeze
            dynamical_F, fine-tune solution_u on 1 target battery
            (AdaPINN, per-pair adaptation_lr from the paper fine-tune script)
-  adaptive train AdaptiveInvariantPINN on the source (source-fitted scaler),
+  adaptive train LincPINN on the source (source-fitted scaler),
            freeze shared_operator + feature scaler, fine-tune solution_u on
            the same 1 target battery with the same adaptation_lr
 

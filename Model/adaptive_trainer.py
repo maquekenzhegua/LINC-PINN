@@ -10,8 +10,8 @@ import numpy as np
 import torch
 from torch import Tensor
 
-from Model.AdaptiveInvariantPINN import (
-    AdaptiveInvariantPINN,
+from Model.linc_pinn import (
+    LincPINN,
     AdaptivePINNConfig,
     BatchLoader,
     EmptyBatchLoaderError,
@@ -149,7 +149,7 @@ class AdaptivePINNTrainer:
 
     def __init__(
         self,
-        model: AdaptiveInvariantPINN,
+        model: LincPINN,
         runtime: AdaptiveRuntimeConfig,
     ) -> None:
         self.model = model
@@ -183,7 +183,7 @@ class AdaptivePINNTrainer:
             log_dir=args.log_dir,
         )
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        return cls(AdaptiveInvariantPINN(model_config, device), runtime)
+        return cls(LincPINN(model_config, device), runtime)
 
     @torch.no_grad()
     def Test(self, loader: BatchLoader) -> Tuple[np.ndarray, np.ndarray]:

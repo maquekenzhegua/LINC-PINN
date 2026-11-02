@@ -34,7 +34,7 @@ def main():
         batch = batchs[i]
         setattr(args, 'batch', batch)
         for e in range(10):
-            save_folder = 'results/AdaptiveInvariantPINN/XJTU/' + str(i) + '-' + str(i) + '/Experiment' + str(e + 1)
+            save_folder = 'results/LincPINN/XJTU/' + str(i) + '-' + str(i) + '/Experiment' + str(e + 1)
             if not os.path.exists(save_folder):
                 os.makedirs(save_folder)
             log_dir = 'logging.txt'
@@ -56,7 +56,7 @@ def small_sample():
             setattr(args,'alpha',0.5)
             setattr(args,'beta',0.2)
             for e in range(10):
-                save_folder = f'results/AdaptiveInvariantPINN/XJTU-small-sample-{n}/' + str(i) + '-' + str(i) + '/Experiment' + str(e + 1)
+                save_folder = f'results/LincPINN/XJTU-small-sample-{n}/' + str(i) + '-' + str(i) + '/Experiment' + str(e + 1)
                 if not os.path.exists(save_folder):
                     os.makedirs(save_folder)
                 log_dir = 'logging.txt'
@@ -105,7 +105,7 @@ def get_args():
     parser.add_argument('--gamma', type=float, default=0.2, help='monotonicity penalty weight (final paper config)')
 
     parser.add_argument('--log_dir', type=str, default='text log.txt', help='log dir, if None, do not save')
-    parser.add_argument('--save_folder', type=str, default='results/AdaptiveInvariantPINN/XJTU', help='save folder')
+    parser.add_argument('--save_folder', type=str, default='results/LincPINN/XJTU', help='save folder')
 
     args = parser.parse_args()
     return args

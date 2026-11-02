@@ -1,8 +1,8 @@
-"""One-click reproduction of the AdaptiveInvariantPINN experiment suite.
+"""One-click reproduction of the LincPINN experiment suite.
 
 Covers the regular SOH, small-sample and cross-dataset transfer suites of
 the CMAME paper, running both the original PINN (Model.Model.PINN) and the
-ported AdaptiveInvariantPINN via the same dataloader splits.
+ported LincPINN via the same dataloader splits.
 
 Usage (from the repository root):
     python scripts/reproduce.py --help
@@ -12,7 +12,7 @@ Usage (from the repository root):
 
 Each phase is resumable: existing Experiment*/{true,pred}_label.npy skip retraining.
 Results are written under results/reproduce/{phase}/{model}/... so the
-hand-graded results/AdaptiveInvariantPINN and results/Ours trees are untouched.
+hand-graded results/LincPINN and results/Ours trees are untouched.
 
 Metrics are aggregated battery-wise from the saved npy pairs with the gap
 thresholds XJTU 0.05 / HUST 0.10 / TJU 0.07 / MIT 0.07. A battery's cycle
@@ -256,7 +256,7 @@ def build_adaptive_args(dataset: str, batch: Optional[str | int], latent_dim: Op
                         feature_scaler: str = "identity", include_row_mean: bool = True,
                         small_gamma: Optional[float] = None, include_anchored: bool = True,
                         operator_weight: Optional[float] = None) -> argparse.Namespace:
-    """Hyper-parameters for AdaptiveInvariantPINN.
+    """Hyper-parameters for LincPINN.
 
     Final model configuration: 8-dim latent bottleneck, self-normalizing
     invariant transform without a source-fitted scaler, and the row-mean
@@ -480,7 +480,7 @@ def main():
     p.add_argument("--datasets", nargs="*", default=None, choices=["XJTU", "TJU", "HUST", "MIT"],
                    help="filter for regular/small phases")
     p.add_argument("--latent_dim", type=int, default=None,
-                   help="override AdaptiveInvariantPINN latent_dim (default 8)")
+                   help="override LincPINN latent_dim (default 8)")
     p.add_argument("--feature_scaler", choices=["source", "identity"], default="identity",
                    help="identity (default): use the self-normalizing row transform as-is; "
                         "source: z-score transformed features with moments fitted on "

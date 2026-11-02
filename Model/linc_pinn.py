@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-"""Trainable AdaptiveInvariantPINN for the measured PINN4SOH datasets."""
+"""Trainable LincPINN for the measured PINN4SOH datasets."""
 
 from typing import Iterable, NamedTuple, Tuple
 
@@ -102,7 +102,7 @@ class InvariantSOHNetwork(nn.Module):
         return self.predictor(latent), latent
 
 
-class AdaptiveInvariantPINN(nn.Module):
+class LincPINN(nn.Module):
     """Joint SOH regressor and shared cycle-to-cycle degradation operator."""
 
     def __init__(

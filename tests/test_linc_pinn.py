@@ -3,7 +3,7 @@ from __future__ import annotations
 """Behavior tests for the adaptive invariant PINN.
 
 Run from the repository root with:
-    python tests/test_adaptive_invariant_pinn.py
+    python tests/test_linc_pinn.py
 """
 
 from pathlib import Path
@@ -19,7 +19,7 @@ from torch.utils.data import DataLoader, TensorDataset
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from Model.AdaptiveInvariantPINN import AdaptiveInvariantPINN, AdaptivePINNConfig
+from Model.linc_pinn import LincPINN, AdaptivePINNConfig
 from Model.adaptive_trainer import (
     AdaptivePINNTrainer,
     AdaptiveRuntimeConfig,
@@ -88,7 +88,7 @@ def test_training_step_optimizes_joint_operator_objective() -> None:
         monotone_weight=0.1,
         epsilon=1e-6,
     )
-    model = AdaptiveInvariantPINN(config=config, device=torch.device("cpu"))
+    model = LincPINN(config=config, device=torch.device("cpu"))
     model.fit_feature_scaler(loader)
 
     # When: one adaptive invariant training epoch is executed.
@@ -114,7 +114,7 @@ def test_monotone_penalty_reaches_model_parameters() -> None:
     y1 = torch.linspace(1.0, 0.8, 6).unsqueeze(1)
     y2 = y1 - 0.01
     config = AdaptivePINNConfig(input_dim=5, latent_dim=2, hidden_dim=8)
-    model = AdaptiveInvariantPINN(config=config, device=torch.device("cpu"))
+    model = LincPINN(config=config, device=torch.device("cpu"))
     model.feature_map.fit(torch.cat((x1, x2), dim=0))
     losses = model._losses((x1, x2, y1, y2))
     encoder_weight = model.solution_u.encoder.net[0].weight
@@ -133,7 +133,7 @@ def test_invariant_statistic_stays_gradient_free() -> None:
     y1 = torch.ones(4, 1)
     y2 = y1 - 0.01
     config = AdaptivePINNConfig(input_dim=5, latent_dim=2, hidden_dim=8)
-    model = AdaptiveInvariantPINN(config=config, device=torch.device("cpu"))
+    model = LincPINN(config=config, device=torch.device("cpu"))
     losses = model._losses((x1, x2, y1, y2))
     assert losses.invariant.requires_grad is False
     # Sanity: the trainable terms do require grad.
@@ -148,7 +148,7 @@ def test_prediction_has_soh_shape_and_finite_values() -> None:
     x = torch.randn(7, 5, generator=generator)
     x[:, -1] = torch.linspace(0.0, 1.0, 7)
     config = AdaptivePINNConfig(input_dim=5, latent_dim=2, hidden_dim=8)
-    model = AdaptiveInvariantPINN(config=config, device=torch.device("cpu"))
+    model = LincPINN(config=config, device=torch.device("cpu"))
     model.feature_map.fit(x)
 
     # When: SOH is predicted through the invariant representation.
@@ -184,7 +184,7 @@ def test_real_xjtu_minibatch_runs_end_to_end() -> Optional[bool]:
     y2 = torch.from_numpy(soh[1:]).float()
     loader = DataLoader(TensorDataset(x1, x2, y1, y2), batch_size=64)
     config = AdaptivePINNConfig(input_dim=17, latent_dim=3, hidden_dim=16)
-    model = AdaptiveInvariantPINN(config=config, device=torch.device("cpu"))
+    model = LincPINN(config=config, device=torch.device("cpu"))
     model.fit_feature_scaler(loader)
 
     # When: one training epoch and target-style inference are performed.
@@ -207,7 +207,7 @@ def test_trainer_saves_complete_best_checkpoint() -> None:
     y2 = torch.tensor([[0.99], [0.94]])
     loader = DataLoader(TensorDataset(x1, x2, y1, y2), batch_size=2)
     config = AdaptivePINNConfig(input_dim=5, latent_dim=2, hidden_dim=8)
-    model = AdaptiveInvariantPINN(config=config, device=torch.device("cpu"))
+    model = LincPINN(config=config, device=torch.device("cpu"))
 
     # When: the complete trainer lifecycle saves its best state.
     with TemporaryDirectory() as directory:
@@ -242,7 +242,7 @@ def test_operator_loss_reaches_shared_operator() -> None:
     y1 = torch.linspace(1.0, 0.8, 6).unsqueeze(1)
     y2 = y1 - 0.01
     config = AdaptivePINNConfig(input_dim=5, latent_dim=2, hidden_dim=8)
-    model = AdaptiveInvariantPINN(config=config, device=torch.device("cpu"))
+    model = LincPINN(config=config, device=torch.device("cpu"))
     model.feature_map.fit(torch.cat((x1, x2), dim=0))
     losses = model._losses((x1, x2, y1, y2))
     operator_weight = model.shared_operator.net[0].weight
@@ -265,7 +265,7 @@ def test_checkpoint_restores_into_a_fresh_model() -> None:
     y2 = torch.tensor([[0.99], [0.94]])
     loader = DataLoader(TensorDataset(x1, x2, y1, y2), batch_size=2)
     config = AdaptivePINNConfig(input_dim=5, latent_dim=2, hidden_dim=8)
-    model = AdaptiveInvariantPINN(config=config, device=torch.device("cpu"))
+    model = LincPINN(config=config, device=torch.device("cpu"))
     with TemporaryDirectory() as directory:
         runtime = AdaptiveRuntimeConfig(
             epochs=1, early_stop=1, save_folder=directory, log_dir=None
@@ -274,7 +274,7 @@ def test_checkpoint_restores_into_a_fresh_model() -> None:
             loader, testloader=loader, validloader=loader
         )
         checkpoint = torch.load(Path(directory) / "model.pth")
-    fresh = AdaptiveInvariantPINN(config=config, device=torch.device("cpu"))
+    fresh = LincPINN(config=config, device=torch.device("cpu"))
     fresh.solution_u.load_state_dict(checkpoint["solution_u"])
     fresh.shared_operator.load_state_dict(checkpoint["shared_operator"])
     fresh.feature_map.load_state_dict(checkpoint["feature_map"])
@@ -286,7 +286,7 @@ def test_checkpoint_restores_into_a_fresh_model() -> None:
 
 def test_log_file_cannot_escape_experiment_directory() -> None:
     # Given: a log path containing parent-directory traversal.
-    experiment = PROJECT_ROOT / "results" / "AdaptiveInvariantPINN"
+    experiment = PROJECT_ROOT / "results" / "LincPINN"
 
     # When: the trainer resolves that untrusted CLI value.
     try:

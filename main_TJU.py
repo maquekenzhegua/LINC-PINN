@@ -44,7 +44,7 @@ def get_args():
     parser.add_argument('--gamma', type=float, default=0.05, help='monotonicity penalty weight (final paper config)')
 
     parser.add_argument('--log_dir', type=str, default='logging.txt', help='log dir, if None, do not save')
-    parser.add_argument('--save_folder', type=str, default='results/AdaptiveInvariantPINN/TJU', help='save folder')
+    parser.add_argument('--save_folder', type=str, default='results/LincPINN/TJU', help='save folder')
 
     args = parser.parse_args()
 
@@ -102,9 +102,9 @@ def main():
         setattr(args, 'batch', batch)
         for e in range(10):
             if args.in_same_batch:
-                save_folder = 'results/AdaptiveInvariantPINN/TJU/' + str(batch) + '-' + str(batch) + '/Experiment' + str(e + 1)
+                save_folder = 'results/LincPINN/TJU/' + str(batch) + '-' + str(batch) + '/Experiment' + str(e + 1)
             else:
-                save_folder = 'results/AdaptiveInvariantPINN/TJU/' + str(args.train_batch) + '-' + str(
+                save_folder = 'results/LincPINN/TJU/' + str(args.train_batch) + '-' + str(
                     args.test_batch) + '/Experiment' + str(e + 1)
             setattr(args, "save_folder", save_folder)
             if not os.path.exists(save_folder):
@@ -121,7 +121,7 @@ def small_sample():
     for e in range(10):
         setattr(args,'in_same_batch',True)
         setattr(args,'batch',batch)
-        setattr(args,'save_folder',f'results/AdaptiveInvariantPINN/TJU-small-sample-{num_battery}/{batch}-{batch}/Experiment{e+1}')
+        setattr(args,'save_folder',f'results/LincPINN/TJU-small-sample-{num_battery}/{batch}-{batch}/Experiment{e+1}')
         setattr(args, 'batch_size', 128)
         if not os.path.exists(args.save_folder):
             os.makedirs(args.save_folder)

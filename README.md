@@ -1,17 +1,33 @@
-# AdaptiveInvariantPINN
+# LINC-PINN
 
-Physics-informed neural network for lithium-ion battery **state-of-health (SOH)
-estimation** that remains reliable in **small-sample** and **cross-dataset
-regimes**. This repository is the official implementation and experiment suite
-for our submission to *Journal of Energy Storage* (Elsevier).
+Reference implementation of a **latent-increment physics-informed network** for
+lithium-ion battery **state-of-health (SOH) estimation** under **label
+scarcity**. This repository is the official implementation and experiment
+suite for our submission to *Journal of Energy Storage* (Elsevier).
 
-The method builds on
-[PINN4SOH](https://github.com/wang-fujin/PINN4SOH) (Wang et al.,
-*Nature Communications*, 2024) and addresses its main failure mode under data
-scarcity: with 1&ndash;4 training batteries, the original per-battery
-min-max + learned encoder memorizes the source cells, the latent
-representation collapses, and test batteries fall out of distribution
-(constant predictions).
+The constraint that physics-informed estimators usually write on the predicted
+SOH field needs a derivative a single record per cycle cannot supply. LINC-PINN
+moves it onto the internal state: a shared operator predicts the one-step
+increment of the latent state and is penalized against the increment the encoder
+produces. That increment is available on every retained cycle, labelled or not,
+so the penalty stays informative at the budgets where a field residual goes
+quiet.
+
+## Results
+
+Ten seed-matched runs per setting, battery-level MAPE, four public ageing
+datasets (XJTU, TJU, MIT, HUST), 387 cells and 310,705 cycles.
+
+| Regime | Proposed | Reference | Best external |
+| --- | --- | --- | --- |
+| Few labels, 8 settings (macro) | **1.141** | 2.092 | 1.665 (XGBoost) |
+| Full labels, 11 conditions (macro) | 1.000 | **0.951** | 1.282 (LSTM) |
+| Transfer, 4 shared directions (macro) | **1.684** | 1.986 | 3.140 (GRU) |
+
+The proposed model is the lowest of the seven methods in all eight few-label
+settings. Under full labels it is second to the reference estimator, so the
+constraint is neutral where labels are plentiful. Every macro average above is
+recomputable from `paper_data/` alone.
 
 ## Method in one paragraph
 
@@ -20,25 +36,26 @@ representation collapses, and test batteries fall out of distribution
    (ii) offsets from the first feature of the same row, (iii) the min-maxed
    cycle progress, and (iv) the row mean of the raw features &mdash; the last
    restores the common-mode aging level that channels (i)+(ii) are blind to,
-   while staying bounded for every battery.
+   while staying bounded for every battery. Every entry of the resulting
+   difference row lies in a fixed bounded range, which is what makes one row
+   per cycle a fair regression target.
 2. **No source-fitted scaler** (`identity` mode): a z-score fitted on a few
    source batteries distorts unseen cells and can amplify near-constant source
    dimensions by 1/&epsilon;.
-3. **8-dim latent bottleneck** with a sine-activated encoder and a **shared
-   degradation operator** `F(z_t, t) &asymp; z_{t+1} &minus; z_t` trained
-   jointly (operator weight 0.5), which regularizes the latent dynamics to be
-   battery-agnostic.
-4. **Prediction-side monotonicity** penalty identical in form to the original
-   physics loss, with per-dataset weights (XJTU 0.2 / TJU 0.05 / HUST 0.2 /
-   MIT 0.02).
+3. **8-dim latent state** with a sine-activated encoder, a readout, and a
+   **shared operator** `F(z_t, t) &asymp; z_{t+1} &minus; z_t`. The operator is
+   trained jointly (weight 0.5 in the small-label regime) and is the term that
+   carries the cycle-to-cycle rule.
+4. **Increment consistency loss**: the operator's predicted one-step increment
+   is penalized against the increment the encoder itself produces. Both sides
+   exist for every retained cycle pair, so the penalty does not need labels.
+5. **Prediction-side monotonicity** penalty, with per-dataset weights
+   (XJTU 0.2 / TJU 0.05 / HUST 0.2 / MIT 0.02).
 
-Result (10 repeats, battery-level MAPE, mean of ten runs): both mean MAPE and
-RMSE improve over the original PINN4SOH in **16 of the 23 evaluated
-conditions**; the remaining settings show mixed changes or consistent
-regressions (e.g., regular HUST is marginally worse on both metrics).
-One-standard-deviation overlap is not treated as a significance test.  The
-largest gains occur where data is scarce (e.g., XJTU-2C n=1: 0.0130 vs
-0.0186 MAPE; transfer XJTU-2C&rarr;HUST: 0.0237 vs 0.0333).
+Ablation over the eight few-label settings: removing the increment loss lifts
+macro MAPE from 1.141% to 1.479%, a 0.338-point shift exceeding the three
+representation changes combined (0.279). The full model carries 11,257
+trainable parameters against 13,662 for the reference estimator.
 
 ## Differences from upstream PINN4SOH
 
@@ -85,7 +102,7 @@ and `figures/matlab/run_all.m` renders fig2&ndash;fig7 as vector PDFs.
 ## Repository layout
 
 ```
-Model/                     AdaptiveInvariantPINN model, trainer, invariant features,
+Model/                     LincPINN model, trainer, invariant features,
                            original PINN (Model.py) and comparison nets (Compare_Models.py)
 dataloader/                dataset reading + per-battery min-max normalization
 main_XJTU.py etc.          original per-dataset entry points (1:1 with the PINN4SOH paper;
@@ -214,7 +231,7 @@ $PY scripts/attribution/battery_reaggregate.py --with-baselines \
     --boundaries-from paper_data/evaluation/batteryid/boundaries
 
 # Unit tests
-$PY tests/test_adaptive_invariant_pinn.py
+$PY tests/test_linc_pinn.py
 
 # Figure data (npy/paper_data -> the nine tidy CSVs; fig2/fig3 need data/)
 $PY figures/data/make_figure_data.py
@@ -287,7 +304,7 @@ $PY scripts/summarize_baseline_transfer.py --baselines-in results/baselines \
     --main-in results/transfer --out evaluation/baselines
 
 # Unit tests + figures
-$PY tests/test_adaptive_invariant_pinn.py
+$PY tests/test_linc_pinn.py
 $PY figures/data/make_figure_data.py
 cd figures/matlab && matlab -batch "run_all"
 ```
@@ -347,7 +364,7 @@ acceptance).
 
 ```bibtex
 @article{adaptiveinvariantpinn2026,
-  title  = {AdaptiveInvariantPINN: invariant physics-informed learning for
+  title  = {LincPINN: invariant physics-informed learning for
             battery state-of-health estimation under small-sample and
             cross-dataset regimes},
   author = {[authors]},

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-"""Label-free invariant representation from the AdaptiveInvariantPINN paper."""
+"""Label-free invariant representation from the LincPINN paper."""
 
 from typing import Final
 

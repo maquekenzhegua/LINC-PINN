@@ -36,7 +36,7 @@ def get_args():
     parser.add_argument('--gamma', type=float, default=0.2, help='monotonicity penalty weight (final paper config)')
 
     parser.add_argument('--log_dir', type=str, default='logging.txt', help='log dir, if None, do not save')
-    parser.add_argument('--save_folder', type=str, default='results/AdaptiveInvariantPINN/HUST', help='save folder')
+    parser.add_argument('--save_folder', type=str, default='results/LincPINN/HUST', help='save folder')
 
     args = parser.parse_args()
 
@@ -71,7 +71,7 @@ def load_HUST_data(args,small_sample=None):
 def main():
     args = get_args()
     for e in range(10):
-        setattr(args, 'save_folder', f'results/AdaptiveInvariantPINN/HUST/Experiment{e + 1}')
+        setattr(args, 'save_folder', f'results/LincPINN/HUST/Experiment{e + 1}')
         if not os.path.exists(args.save_folder):
             os.makedirs(args.save_folder)
 
@@ -84,7 +84,7 @@ def small_sample():
     args = get_args()
     for n in [1,2,3,4]:
         for e in range(10):
-            setattr(args,'save_folder',f'results/AdaptiveInvariantPINN/HUST-small-sample-{n}/Experiment{e+1}')
+            setattr(args,'save_folder',f'results/LincPINN/HUST-small-sample-{n}/Experiment{e+1}')
             setattr(args,'batch_size',128)
             if not os.path.exists(args.save_folder):
                 os.makedirs(args.save_folder)

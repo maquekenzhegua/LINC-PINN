@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-"""Small sine-activated networks used by AdaptiveInvariantPINN."""
+"""Small sine-activated networks used by LincPINN."""
 
 from torch import Tensor, nn
 

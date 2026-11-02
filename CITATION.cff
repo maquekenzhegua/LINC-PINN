@@ -1,12 +1,19 @@
 cff-version: 1.2.0
 message: "If you use this code, please cite both this work and the PINN4SOH dataset/protocol paper (see README)."
-title: "AdaptiveInvariantPINN: invariant physics-informed learning for battery state-of-health estimation under small-sample and cross-dataset regimes"
+title: "Latent-increment physics-informed network for lithium-ion battery state of health estimation under label scarcity"
 authors:
-  - name: "[authors to be filled upon acceptance]"
+  - family-names: "Du"
+    given-names: "Changrong"
+  - family-names: "Shi"
+    given-names: "Yanchao"
+  - family-names: "Guo"
+    given-names: "Jun"
+  - family-names: "Lai"
+    given-names: "Jing"
 version: v1.0
-date-released: "2026-09-17"
+date-released: "2026-11-02"
 license: MIT
-repository-code: "https://github.com/maquekenzhegua/AdaptiveInvariantPINN"
+repository-code: "https://github.com/maquekenzhegua/LINC-PINN"
 keywords:
   - battery
   - state-of-health
