@@ -1,0 +1,18 @@
+# line-ending policy for a Windows-developed, cross-platform repo
+* text=auto
+*.py text
+*.m text
+*.md text
+*.csv text
+*.json text
+*.txt text
+*.cff text
+*.bib text
+*.ps1 text
+*.npy -text
+*.npz binary
+*.pth binary
+*.png binary
+*.pdf binary
+*.pptx binary
+*.drawio binary

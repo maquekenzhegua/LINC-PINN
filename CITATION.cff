@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite both this work and the PINN4SOH dataset/protocol paper (see README)."
+title: "AdaptiveInvariantPINN: invariant physics-informed learning for battery state-of-health estimation under small-sample and cross-dataset regimes"
+authors:
+  - name: "[authors to be filled upon acceptance]"
+version: v1.0
+date-released: "2026-09-17"
+license: MIT
+repository-code: "https://github.com/maquekenzhegua/AdaptiveInvariantPINN"
+keywords:
+  - battery
+  - state-of-health
+  - physics-informed neural network
+  - invariant representation
+  - transfer learning
+references:
+  - type: article
+    title: "Physics-informed neural network for lithium-ion battery degradation stable modeling and prognosis"
+    authors:
+      - name: "Fujin Wang"
+      - name: "[et al., see the original publication]"
+    journal: "Nature Communications"
+    year: 2024
