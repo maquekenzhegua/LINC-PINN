@@ -1,0 +1,105 @@
+data path:
+['data/XJTU data\\2C_battery-1.csv']
+data path:
+['data/XJTU data\\2C_battery-4.csv', 'data/XJTU data\\2C_battery-8.csv']
+2026-09-16 03:59 - function:_save_args - INFO - Args:
+2026-09-16 03:59 - function:_save_args - CRITICAL - 	batch_size:128
+2026-09-16 03:59 - function:_save_args - CRITICAL - 	normalization_method:min-max
+2026-09-16 03:59 - function:_save_args - CRITICAL - 	epochs:200
+2026-09-16 03:59 - function:_save_args - CRITICAL - 	early_stop:10
+2026-09-16 03:59 - function:_save_args - CRITICAL - 	warmup_epochs:30
+2026-09-16 03:59 - function:_save_args - CRITICAL - 	warmup_lr:0.002
+2026-09-16 03:59 - function:_save_args - CRITICAL - 	lr:0.01
+2026-09-16 03:59 - function:_save_args - CRITICAL - 	final_lr:0.0002
+2026-09-16 03:59 - function:_save_args - CRITICAL - 	lr_F:0.001
+2026-09-16 03:59 - function:_save_args - CRITICAL - 	F_layers_num:3
+2026-09-16 03:59 - function:_save_args - CRITICAL - 	F_hidden_dim:60
+2026-09-16 03:59 - function:_save_args - CRITICAL - 	alpha:0.7
+2026-09-16 03:59 - function:_save_args - CRITICAL - 	beta:0.2
+2026-09-16 03:59 - function:_save_args - CRITICAL - 	log_dir:logging.txt
+2026-09-16 03:59 - function:_save_args - CRITICAL - 	save_folder:results\v4_transfer\orig\TJU-0-to-XJTU-2C\Experiment2
+2026-09-16 03:59 - function:_save_args - CRITICAL - 	pretrain_model:pretrained model\model_TJU_0.pth
+2026-09-16 03:59 - function:_save_args - CRITICAL - 	adaptation_lr:0.0004
+2026-09-16 03:59 - function:_save_args - CRITICAL - 	adaptation_epochs:200
+2026-09-16 03:59 - function:_save_args - CRITICAL - 	target_data:XJTU
+2026-09-16 03:59 - function:_save_args - CRITICAL - 	target_batch:0
+2026-09-16 03:59 - function:_save_args - CRITICAL - 	source_batch:0
+2026-09-16 03:59 - function:adaptation_one_epoch - DEBUG - [train] epoch:1 iter:1 data loss:0.005882, PDE loss:0.000017, physics loss:0.001096, total loss:0.006113
+2026-09-16 03:59 - function:adaptation_one_epoch - DEBUG - [train] epoch:1 iter:2 data loss:0.002874, PDE loss:0.000017, physics loss:0.000764, total loss:0.003038
+2026-09-16 03:59 - function:adaptation_one_epoch - DEBUG - [train] epoch:1 iter:3 data loss:0.001334, PDE loss:0.000016, physics loss:0.000132, total loss:0.001372
+2026-09-16 03:59 - function:Adaptation - INFO - [Train] epoch:1, data loss:0.003363, PDE loss:0.000016, physics loss:0.000664, total loss:0.003508
+2026-09-16 03:59 - function:Adaptation - INFO - [Valid] epoch:1, MSE: 0.0010624342830851674
+2026-09-16 03:59 - function:Adaptation - INFO - [Test] MSE: 0.00119221, MAE: 0.028033, MAPE: 0.030573, RMSE: 0.034528
+2026-09-16 03:59 - function:adaptation_one_epoch - DEBUG - [train] epoch:2 iter:1 data loss:0.001438, PDE loss:0.000018, physics loss:0.001458, total loss:0.001742
+2026-09-16 03:59 - function:adaptation_one_epoch - DEBUG - [train] epoch:2 iter:2 data loss:0.001347, PDE loss:0.000025, physics loss:0.001274, total loss:0.001619
+2026-09-16 03:59 - function:adaptation_one_epoch - DEBUG - [train] epoch:2 iter:3 data loss:0.002091, PDE loss:0.000018, physics loss:0.000345, total loss:0.002172
+2026-09-16 03:59 - function:Adaptation - INFO - [Train] epoch:2, data loss:0.001625, PDE loss:0.000020, physics loss:0.001026, total loss:0.001844
+2026-09-16 03:59 - function:Adaptation - INFO - [Valid] epoch:2, MSE: 0.001100719440728426
+2026-09-16 03:59 - function:Adaptation - INFO - [Train] epoch:3, data loss:0.001062, PDE loss:0.000025, physics loss:0.001239, total loss:0.001327
+2026-09-16 03:59 - function:Adaptation - INFO - [Valid] epoch:3, MSE: 0.0004201499978080392
+2026-09-16 03:59 - function:Adaptation - INFO - [Test] MSE: 0.00117570, MAE: 0.019079, MAPE: 0.021847, RMSE: 0.034289
+2026-09-16 03:59 - function:Adaptation - INFO - [Train] epoch:4, data loss:0.000660, PDE loss:0.000026, physics loss:0.000911, total loss:0.000860
+2026-09-16 03:59 - function:Adaptation - INFO - [Valid] epoch:4, MSE: 0.0002102152502629906
+2026-09-16 03:59 - function:Adaptation - INFO - [Test] MSE: 0.00069395, MAE: 0.016564, MAPE: 0.018650, RMSE: 0.026343
+2026-09-16 03:59 - function:Adaptation - INFO - [Train] epoch:5, data loss:0.000498, PDE loss:0.000028, physics loss:0.000749, total loss:0.000667
+2026-09-16 03:59 - function:Adaptation - INFO - [Valid] epoch:5, MSE: 0.00012311211321502924
+2026-09-16 03:59 - function:Adaptation - INFO - [Test] MSE: 0.00036092, MAE: 0.011795, MAPE: 0.013235, RMSE: 0.018998
+2026-09-16 03:59 - function:Adaptation - INFO - [Train] epoch:6, data loss:0.000324, PDE loss:0.000031, physics loss:0.000634, total loss:0.000472
+2026-09-16 03:59 - function:Adaptation - INFO - [Valid] epoch:6, MSE: 0.00013057493197266012
+2026-09-16 03:59 - function:Adaptation - INFO - [Train] epoch:7, data loss:0.000203, PDE loss:0.000028, physics loss:0.000599, total loss:0.000343
+2026-09-16 03:59 - function:Adaptation - INFO - [Valid] epoch:7, MSE: 0.00014026646385900676
+2026-09-16 03:59 - function:Adaptation - INFO - [Train] epoch:8, data loss:0.000242, PDE loss:0.000032, physics loss:0.000503, total loss:0.000365
+2026-09-16 03:59 - function:Adaptation - INFO - [Valid] epoch:8, MSE: 5.5964512284845114e-05
+2026-09-16 03:59 - function:Adaptation - INFO - [Test] MSE: 0.00021895, MAE: 0.008760, MAPE: 0.009889, RMSE: 0.014797
+2026-09-16 03:59 - function:Adaptation - INFO - [Train] epoch:9, data loss:0.000184, PDE loss:0.000031, physics loss:0.000417, total loss:0.000289
+2026-09-16 03:59 - function:Adaptation - INFO - [Valid] epoch:9, MSE: 4.232893843436614e-05
+2026-09-16 03:59 - function:Adaptation - INFO - [Test] MSE: 0.00024437, MAE: 0.009134, MAPE: 0.010329, RMSE: 0.015632
+2026-09-16 03:59 - function:Adaptation - INFO - [Train] epoch:10, data loss:0.000176, PDE loss:0.000028, physics loss:0.000367, total loss:0.000269
+2026-09-16 03:59 - function:Adaptation - INFO - [Valid] epoch:10, MSE: 5.003402475267649e-05
+2026-09-16 03:59 - function:Adaptation - INFO - [Train] epoch:11, data loss:0.000190, PDE loss:0.000035, physics loss:0.000502, total loss:0.000315
+2026-09-16 03:59 - function:Adaptation - INFO - [Valid] epoch:11, MSE: 5.3736868721898645e-05
+2026-09-16 03:59 - function:Adaptation - INFO - [Train] epoch:12, data loss:0.000173, PDE loss:0.000030, physics loss:0.000476, total loss:0.000289
+2026-09-16 03:59 - function:Adaptation - INFO - [Valid] epoch:12, MSE: 7.816267316229641e-05
+2026-09-16 03:59 - function:Adaptation - INFO - [Train] epoch:13, data loss:0.000137, PDE loss:0.000023, physics loss:0.000437, total loss:0.000240
+2026-09-16 03:59 - function:Adaptation - INFO - [Valid] epoch:13, MSE: 6.905891495989636e-05
+2026-09-16 03:59 - function:Adaptation - INFO - [Train] epoch:14, data loss:0.000132, PDE loss:0.000023, physics loss:0.000415, total loss:0.000231
+2026-09-16 03:59 - function:Adaptation - INFO - [Valid] epoch:14, MSE: 3.918458241969347e-05
+2026-09-16 03:59 - function:Adaptation - INFO - [Test] MSE: 0.00017592, MAE: 0.008129, MAPE: 0.009135, RMSE: 0.013263
+2026-09-16 03:59 - function:Adaptation - INFO - [Train] epoch:15, data loss:0.000129, PDE loss:0.000024, physics loss:0.000391, total loss:0.000224
+2026-09-16 03:59 - function:Adaptation - INFO - [Valid] epoch:15, MSE: 2.905193468905054e-05
+2026-09-16 03:59 - function:Adaptation - INFO - [Test] MSE: 0.00019466, MAE: 0.008956, MAPE: 0.010010, RMSE: 0.013952
+2026-09-16 03:59 - function:Adaptation - INFO - [Train] epoch:16, data loss:0.000115, PDE loss:0.000020, physics loss:0.000353, total loss:0.000200
+2026-09-16 03:59 - function:Adaptation - INFO - [Valid] epoch:16, MSE: 4.220791379339062e-05
+2026-09-16 03:59 - function:Adaptation - INFO - [Train] epoch:17, data loss:0.000117, PDE loss:0.000016, physics loss:0.000400, total loss:0.000209
+2026-09-16 03:59 - function:Adaptation - INFO - [Valid] epoch:17, MSE: 6.824515730841085e-05
+2026-09-16 03:59 - function:Adaptation - INFO - [Train] epoch:18, data loss:0.000125, PDE loss:0.000021, physics loss:0.000379, total loss:0.000215
+2026-09-16 03:59 - function:Adaptation - INFO - [Valid] epoch:18, MSE: 4.882783832727e-05
+2026-09-16 03:59 - function:Adaptation - INFO - [Train] epoch:19, data loss:0.000126, PDE loss:0.000025, physics loss:0.000310, total loss:0.000205
+2026-09-16 03:59 - function:Adaptation - INFO - [Valid] epoch:19, MSE: 2.812883394653909e-05
+2026-09-16 03:59 - function:Adaptation - INFO - [Test] MSE: 0.00021418, MAE: 0.008599, MAPE: 0.009723, RMSE: 0.014635
+2026-09-16 03:59 - function:Adaptation - INFO - [Train] epoch:20, data loss:0.000128, PDE loss:0.000020, physics loss:0.000385, total loss:0.000219
+2026-09-16 03:59 - function:Adaptation - INFO - [Valid] epoch:20, MSE: 2.6794037694344297e-05
+2026-09-16 03:59 - function:Adaptation - INFO - [Test] MSE: 0.00020003, MAE: 0.008138, MAPE: 0.009224, RMSE: 0.014143
+2026-09-16 03:59 - function:Adaptation - INFO - [Train] epoch:21, data loss:0.000102, PDE loss:0.000018, physics loss:0.000401, total loss:0.000195
+2026-09-16 03:59 - function:Adaptation - INFO - [Valid] epoch:21, MSE: 3.915868001058698e-05
+2026-09-16 03:59 - function:Adaptation - INFO - [Train] epoch:22, data loss:0.000101, PDE loss:0.000028, physics loss:0.000432, total loss:0.000207
+2026-09-16 03:59 - function:Adaptation - INFO - [Valid] epoch:22, MSE: 4.434696165844798e-05
+2026-09-16 03:59 - function:Adaptation - INFO - [Train] epoch:23, data loss:0.000096, PDE loss:0.000017, physics loss:0.000391, total loss:0.000186
+2026-09-16 03:59 - function:Adaptation - INFO - [Valid] epoch:23, MSE: 3.483944965410046e-05
+2026-09-16 03:59 - function:Adaptation - INFO - [Train] epoch:24, data loss:0.000121, PDE loss:0.000019, physics loss:0.000420, total loss:0.000218
+2026-09-16 03:59 - function:Adaptation - INFO - [Valid] epoch:24, MSE: 3.516089418553747e-05
+2026-09-16 03:59 - function:Adaptation - INFO - [Train] epoch:25, data loss:0.000097, PDE loss:0.000020, physics loss:0.000379, total loss:0.000187
+2026-09-16 03:59 - function:Adaptation - INFO - [Valid] epoch:25, MSE: 3.8495818444062024e-05
+2026-09-16 03:59 - function:Adaptation - INFO - [Train] epoch:26, data loss:0.000089, PDE loss:0.000022, physics loss:0.000376, total loss:0.000179
+2026-09-16 03:59 - function:Adaptation - INFO - [Valid] epoch:26, MSE: 4.848395110457204e-05
+2026-09-16 03:59 - function:Adaptation - INFO - [Train] epoch:27, data loss:0.000086, PDE loss:0.000022, physics loss:0.000378, total loss:0.000177
+2026-09-16 03:59 - function:Adaptation - INFO - [Valid] epoch:27, MSE: 4.1958785004680976e-05
+2026-09-16 03:59 - function:Adaptation - INFO - [Train] epoch:28, data loss:0.000100, PDE loss:0.000018, physics loss:0.000330, total loss:0.000178
+2026-09-16 03:59 - function:Adaptation - INFO - [Valid] epoch:28, MSE: 3.135242513963021e-05
+2026-09-16 03:59 - function:Adaptation - INFO - [Train] epoch:29, data loss:0.000077, PDE loss:0.000017, physics loss:0.000338, total loss:0.000156
+2026-09-16 03:59 - function:Adaptation - INFO - [Valid] epoch:29, MSE: 2.8034111892338842e-05
+2026-09-16 03:59 - function:Adaptation - INFO - [Train] epoch:30, data loss:0.000086, PDE loss:0.000019, physics loss:0.000279, total loss:0.000155
+2026-09-16 03:59 - function:Adaptation - INFO - [Valid] epoch:30, MSE: 2.8277154342504218e-05
+2026-09-16 03:59 - function:Adaptation - INFO - [Train] epoch:31, data loss:0.000088, PDE loss:0.000019, physics loss:0.000417, total loss:0.000185
+2026-09-16 03:59 - function:Adaptation - INFO - [Valid] epoch:31, MSE: 3.381545320735313e-05
+2026-09-16 03:59 - function:Adaptation - INFO - early stop at epoch 31
