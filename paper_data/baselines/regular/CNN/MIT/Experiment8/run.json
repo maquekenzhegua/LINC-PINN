@@ -1,0 +1,18 @@
+{
+  "model": "CNN",
+  "seed": 8,
+  "device": "cuda",
+  "source_fit": {
+    "best_validation_mse": 0.000573524390347302,
+    "best_epoch": 40,
+    "epochs_completed": 51
+  },
+  "target_fine_tune": null,
+  "source_train_rows": 54011,
+  "source_valid_rows": 13556,
+  "test_rows": 14170,
+  "elapsed_seconds": 73.98816740000075,
+  "input_shape_per_sample": [
+    17
+  ]
+}

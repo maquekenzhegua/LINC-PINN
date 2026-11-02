@@ -1,0 +1,26 @@
+{
+  "model": "XGBOOST",
+  "seed": 8,
+  "selected_params": {
+    "max_depth": 2,
+    "learning_rate": 0.03,
+    "min_child_weight": 1,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8,
+    "reg_lambda": 1.0
+  },
+  "source_selected_rounds": 193,
+  "source_tuning_validation_mse": 0.0017098707612603903,
+  "source_train_rows": 13517,
+  "source_valid_rows": 3406,
+  "test_rows": 732,
+  "device": "cpu",
+  "elapsed_seconds": 0.105868399999963,
+  "target_fine_tune": {
+    "adaptation": "continued boosting with target calibration labels",
+    "target_train_rows": 283,
+    "target_valid_rows": 71,
+    "final_boosting_rounds": 239,
+    "best_iteration": 218
+  }
+}

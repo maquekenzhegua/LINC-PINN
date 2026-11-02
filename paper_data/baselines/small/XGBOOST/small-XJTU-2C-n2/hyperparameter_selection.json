@@ -1,0 +1,17 @@
+{
+  "cache_version": 1,
+  "train_rows": 579,
+  "valid_rows": 145,
+  "candidate_grid": "max_depth={2,3,4}, learning_rate={0.03,0.07}, min_child_weight=1, subsample=0.8, colsample_bytree=0.8",
+  "selected_params": {
+    "max_depth": 2,
+    "learning_rate": 0.07,
+    "min_child_weight": 1,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8,
+    "reg_lambda": 1.0
+  },
+  "selected_n_estimators": 177,
+  "selection_validation_mse": 0.003908430691808462,
+  "candidate_index": 1
+}

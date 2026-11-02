@@ -1,0 +1,77 @@
+{
+  "phase": "transfer",
+  "label": "XJTU-2C-to-TJU-0",
+  "source": {
+    "dataset": "XJTU",
+    "batch": "2C",
+    "train_batteries": [
+      "2C_battery-1",
+      "2C_battery-2",
+      "2C_battery-3",
+      "2C_battery-5",
+      "2C_battery-6",
+      "2C_battery-7"
+    ],
+    "validation_batteries": [
+      "2C_battery-1",
+      "2C_battery-2",
+      "2C_battery-3",
+      "2C_battery-5",
+      "2C_battery-6",
+      "2C_battery-7"
+    ],
+    "test_batteries": [
+      "2C_battery-4",
+      "2C_battery-8"
+    ],
+    "n_train": 1735,
+    "n_validation": 436,
+    "n_test": 732
+  },
+  "target_calibration": {
+    "dataset": "TJU",
+    "batch": 0,
+    "train_batteries": [
+      "CY25-025_1-#1"
+    ],
+    "validation_batteries": [
+      "CY25-025_1-#1"
+    ],
+    "test_batteries": [
+      "CY25-025_1-#5",
+      "CY25-05_1-#10",
+      "CY25-05_1-#16",
+      "CY25-05_1-#2",
+      "CY25-05_1-#8",
+      "CY25-1_1-#3",
+      "CY25-1_1-#9",
+      "CY45-05_1-#1",
+      "CY45-05_1-#15",
+      "CY45-05_1-#19",
+      "CY45-05_1-#24",
+      "CY45-05_1-#28",
+      "CY45-05_1-#8"
+    ],
+    "n_train": 379,
+    "n_validation": 95,
+    "n_test": 4527
+  },
+  "target_test_batteries": [
+    "CY25-025_1-#5",
+    "CY25-05_1-#10",
+    "CY25-05_1-#16",
+    "CY25-05_1-#2",
+    "CY25-05_1-#8",
+    "CY25-1_1-#3",
+    "CY25-1_1-#9",
+    "CY45-05_1-#1",
+    "CY45-05_1-#15",
+    "CY45-05_1-#19",
+    "CY45-05_1-#24",
+    "CY45-05_1-#28",
+    "CY45-05_1-#8"
+  ],
+  "target_test_rows": 4527,
+  "target_adaptation": "first target training battery; chronological 80/20 train/validation",
+  "validation_scheme": "chronological separately within each battery; no cross-boundary windows"
+}

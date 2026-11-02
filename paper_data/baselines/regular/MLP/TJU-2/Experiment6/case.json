@@ -1,0 +1,36 @@
+{
+  "phase": "regular",
+  "label": "TJU-2",
+  "small_n": null,
+  "split": {
+    "dataset": "TJU",
+    "batch": 2,
+    "train_batteries": [
+      "CY25-05_1-#1",
+      "CY25-05_1-#2",
+      "CY25-05_1-#3",
+      "CY25-05_2-#1",
+      "CY25-05_2-#3",
+      "CY25-05_4-#1",
+      "CY25-05_4-#2"
+    ],
+    "validation_batteries": [
+      "CY25-05_1-#1",
+      "CY25-05_1-#2",
+      "CY25-05_1-#3",
+      "CY25-05_2-#1",
+      "CY25-05_2-#3",
+      "CY25-05_4-#1",
+      "CY25-05_4-#2"
+    ],
+    "test_batteries": [
+      "CY25-05_2-#2",
+      "CY25-05_4-#3"
+    ],
+    "n_train": 5165,
+    "n_validation": 1294,
+    "n_test": 1757
+  },
+  "validation_scheme": "chronological separately within each training battery",
+  "windows_cross_partition": false
+}

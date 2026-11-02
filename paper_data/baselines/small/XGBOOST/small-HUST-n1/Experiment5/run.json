@@ -1,0 +1,20 @@
+{
+  "model": "XGBOOST",
+  "seed": 5,
+  "selected_params": {
+    "max_depth": 2,
+    "learning_rate": 0.03,
+    "min_child_weight": 1,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8,
+    "reg_lambda": 1.0
+  },
+  "source_selected_rounds": 548,
+  "source_tuning_validation_mse": 0.004359441809356213,
+  "source_train_rows": 1183,
+  "source_valid_rows": 296,
+  "test_rows": 35302,
+  "device": "cpu",
+  "elapsed_seconds": 0.1015418999998019,
+  "target_fine_tune": null
+}

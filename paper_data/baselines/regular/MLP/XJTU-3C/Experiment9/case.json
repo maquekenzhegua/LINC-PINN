@@ -1,0 +1,47 @@
+{
+  "phase": "regular",
+  "label": "XJTU-3C",
+  "small_n": null,
+  "split": {
+    "dataset": "XJTU",
+    "batch": "3C",
+    "train_batteries": [
+      "3C_battery-1",
+      "3C_battery-10",
+      "3C_battery-11",
+      "3C_battery-12",
+      "3C_battery-13",
+      "3C_battery-15",
+      "3C_battery-2",
+      "3C_battery-3",
+      "3C_battery-5",
+      "3C_battery-6",
+      "3C_battery-7",
+      "3C_battery-9"
+    ],
+    "validation_batteries": [
+      "3C_battery-1",
+      "3C_battery-10",
+      "3C_battery-11",
+      "3C_battery-12",
+      "3C_battery-13",
+      "3C_battery-15",
+      "3C_battery-2",
+      "3C_battery-3",
+      "3C_battery-5",
+      "3C_battery-6",
+      "3C_battery-7",
+      "3C_battery-9"
+    ],
+    "test_batteries": [
+      "3C_battery-14",
+      "3C_battery-4",
+      "3C_battery-8"
+    ],
+    "n_train": 2095,
+    "n_validation": 531,
+    "n_test": 669
+  },
+  "validation_scheme": "chronological separately within each training battery",
+  "windows_cross_partition": false
+}

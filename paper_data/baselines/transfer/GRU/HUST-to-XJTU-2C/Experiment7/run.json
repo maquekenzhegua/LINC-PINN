@@ -1,0 +1,23 @@
+{
+  "model": "GRU",
+  "seed": 7,
+  "source_fit": {
+    "best_validation_mse": 0.00019025150686502457,
+    "best_epoch": 8,
+    "epochs_completed": 29
+  },
+  "target_fine_tune": {
+    "best_validation_mse": 0.00020649693033192307,
+    "best_epoch": 20,
+    "epochs_completed": 31
+  },
+  "test_rows": 732,
+  "device": "cuda",
+  "elapsed_seconds": 25.01763320000009,
+  "window_length": 6,
+  "window_stride": 1,
+  "input_shape_per_sample": [
+    6,
+    17
+  ]
+}

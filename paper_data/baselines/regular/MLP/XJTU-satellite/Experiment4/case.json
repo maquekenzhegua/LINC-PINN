@@ -1,0 +1,34 @@
+{
+  "phase": "regular",
+  "label": "XJTU-satellite",
+  "small_n": null,
+  "split": {
+    "dataset": "XJTU",
+    "batch": "satellite",
+    "train_batteries": [
+      "Sim_satellite_battery-1",
+      "Sim_satellite_battery-2",
+      "Sim_satellite_battery-3",
+      "Sim_satellite_battery-5",
+      "Sim_satellite_battery-6",
+      "Sim_satellite_battery-7"
+    ],
+    "validation_batteries": [
+      "Sim_satellite_battery-1",
+      "Sim_satellite_battery-2",
+      "Sim_satellite_battery-3",
+      "Sim_satellite_battery-5",
+      "Sim_satellite_battery-6",
+      "Sim_satellite_battery-7"
+    ],
+    "test_batteries": [
+      "Sim_satellite_battery-4",
+      "Sim_satellite_battery-8"
+    ],
+    "n_train": 3443,
+    "n_validation": 864,
+    "n_test": 1350
+  },
+  "validation_scheme": "chronological separately within each training battery",
+  "windows_cross_partition": false
+}

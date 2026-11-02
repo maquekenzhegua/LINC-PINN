@@ -1,0 +1,19 @@
+{
+  "model": "LSTM",
+  "seed": 9,
+  "source_fit": {
+    "best_validation_mse": 0.00013233213394414634,
+    "best_epoch": 98,
+    "epochs_completed": 119
+  },
+  "target_fine_tune": null,
+  "test_rows": 669,
+  "device": "cuda",
+  "elapsed_seconds": 2.756648499999983,
+  "window_length": 6,
+  "window_stride": 1,
+  "input_shape_per_sample": [
+    6,
+    17
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "phase": "regular",
+  "label": "XJTU-2C",
+  "small_n": null,
+  "split": {
+    "dataset": "XJTU",
+    "batch": "2C",
+    "train_batteries": [
+      "2C_battery-1",
+      "2C_battery-2",
+      "2C_battery-3",
+      "2C_battery-5",
+      "2C_battery-6",
+      "2C_battery-7"
+    ],
+    "validation_batteries": [
+      "2C_battery-1",
+      "2C_battery-2",
+      "2C_battery-3",
+      "2C_battery-5",
+      "2C_battery-6",
+      "2C_battery-7"
+    ],
+    "test_batteries": [
+      "2C_battery-4",
+      "2C_battery-8"
+    ],
+    "n_train": 1735,
+    "n_validation": 436,
+    "n_test": 732
+  },
+  "validation_scheme": "chronological separately within each training battery",
+  "windows_cross_partition": false
+}

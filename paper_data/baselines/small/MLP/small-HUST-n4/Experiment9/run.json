@@ -1,0 +1,18 @@
+{
+  "model": "MLP",
+  "seed": 9,
+  "device": "cuda",
+  "source_fit": {
+    "best_validation_mse": 0.0022110070567578077,
+    "best_epoch": 3,
+    "epochs_completed": 24
+  },
+  "target_fine_tune": null,
+  "source_train_rows": 6263,
+  "source_valid_rows": 1568,
+  "test_rows": 35302,
+  "elapsed_seconds": 1.7490794000004826,
+  "input_shape_per_sample": [
+    17
+  ]
+}

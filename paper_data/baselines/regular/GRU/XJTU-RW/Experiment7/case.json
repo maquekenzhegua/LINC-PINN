@@ -1,0 +1,34 @@
+{
+  "phase": "regular",
+  "label": "XJTU-RW",
+  "small_n": null,
+  "split": {
+    "dataset": "XJTU",
+    "batch": "RW",
+    "train_batteries": [
+      "RW_battery-1",
+      "RW_battery-2",
+      "RW_battery-3",
+      "RW_battery-5",
+      "RW_battery-6",
+      "RW_battery-7"
+    ],
+    "validation_batteries": [
+      "RW_battery-1",
+      "RW_battery-2",
+      "RW_battery-3",
+      "RW_battery-5",
+      "RW_battery-6",
+      "RW_battery-7"
+    ],
+    "test_batteries": [
+      "RW_battery-4",
+      "RW_battery-8"
+    ],
+    "n_train": 884,
+    "n_validation": 224,
+    "n_test": 322
+  },
+  "validation_scheme": "chronological separately within each training battery",
+  "windows_cross_partition": false
+}

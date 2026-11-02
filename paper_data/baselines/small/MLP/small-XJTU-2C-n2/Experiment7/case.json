@@ -1,0 +1,26 @@
+{
+  "phase": "small",
+  "label": "small-XJTU-2C-n2",
+  "small_n": 2,
+  "split": {
+    "dataset": "XJTU",
+    "batch": "2C",
+    "train_batteries": [
+      "2C_battery-1",
+      "2C_battery-2"
+    ],
+    "validation_batteries": [
+      "2C_battery-1",
+      "2C_battery-2"
+    ],
+    "test_batteries": [
+      "2C_battery-4",
+      "2C_battery-8"
+    ],
+    "n_train": 579,
+    "n_validation": 145,
+    "n_test": 732
+  },
+  "validation_scheme": "chronological separately within each training battery",
+  "windows_cross_partition": false
+}

@@ -1,0 +1,46 @@
+{
+  "phase": "small",
+  "label": "small-HUST-n3",
+  "small_n": 3,
+  "split": {
+    "dataset": "HUST",
+    "batch": null,
+    "train_batteries": [
+      "1-1",
+      "1-2",
+      "1-3"
+    ],
+    "validation_batteries": [
+      "1-1",
+      "1-2",
+      "1-3"
+    ],
+    "test_batteries": [
+      "1-4",
+      "1-8",
+      "10-4",
+      "10-8",
+      "2-4",
+      "2-8",
+      "3-4",
+      "3-8",
+      "4-4",
+      "4-8",
+      "5-4",
+      "5-7",
+      "6-4",
+      "6-8",
+      "7-4",
+      "7-8",
+      "8-4",
+      "8-8",
+      "9-4",
+      "9-8"
+    ],
+    "n_train": 4758,
+    "n_validation": 1191,
+    "n_test": 35302
+  },
+  "validation_scheme": "chronological separately within each training battery",
+  "windows_cross_partition": false
+}

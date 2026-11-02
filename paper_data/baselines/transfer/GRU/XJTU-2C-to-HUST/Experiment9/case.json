@@ -1,0 +1,91 @@
+{
+  "phase": "transfer",
+  "label": "XJTU-2C-to-HUST",
+  "source": {
+    "dataset": "XJTU",
+    "batch": "2C",
+    "train_batteries": [
+      "2C_battery-1",
+      "2C_battery-2",
+      "2C_battery-3",
+      "2C_battery-5",
+      "2C_battery-6",
+      "2C_battery-7"
+    ],
+    "validation_batteries": [
+      "2C_battery-1",
+      "2C_battery-2",
+      "2C_battery-3",
+      "2C_battery-5",
+      "2C_battery-6",
+      "2C_battery-7"
+    ],
+    "test_batteries": [
+      "2C_battery-4",
+      "2C_battery-8"
+    ],
+    "n_train": 1735,
+    "n_validation": 436,
+    "n_test": 732
+  },
+  "target_calibration": {
+    "dataset": "HUST",
+    "batch": null,
+    "train_batteries": [
+      "1-1"
+    ],
+    "validation_batteries": [
+      "1-1"
+    ],
+    "test_batteries": [
+      "1-4",
+      "1-8",
+      "10-4",
+      "10-8",
+      "2-4",
+      "2-8",
+      "3-4",
+      "3-8",
+      "4-4",
+      "4-8",
+      "5-4",
+      "5-7",
+      "6-4",
+      "6-8",
+      "7-4",
+      "7-8",
+      "8-4",
+      "8-8",
+      "9-4",
+      "9-8"
+    ],
+    "n_train": 1183,
+    "n_validation": 296,
+    "n_test": 35302
+  },
+  "target_test_batteries": [
+    "1-4",
+    "1-8",
+    "10-4",
+    "10-8",
+    "2-4",
+    "2-8",
+    "3-4",
+    "3-8",
+    "4-4",
+    "4-8",
+    "5-4",
+    "5-7",
+    "6-4",
+    "6-8",
+    "7-4",
+    "7-8",
+    "8-4",
+    "8-8",
+    "9-4",
+    "9-8"
+  ],
+  "target_test_rows": 35302,
+  "target_adaptation": "first target training battery; chronological 80/20 train/validation",
+  "validation_scheme": "chronological separately within each battery; no cross-boundary windows"
+}
