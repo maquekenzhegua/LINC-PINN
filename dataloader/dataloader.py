@@ -5,8 +5,91 @@ from torch.utils.data import TensorDataset
 from torch.utils.data import DataLoader
 import os
 import random
+from typing import List, Sequence, Tuple
 from sklearn.model_selection import train_test_split
 from utils.util import write_to_txt
+
+# Inner train/validation partition of the training batteries.
+#   pooled_random  legacy behaviour: concatenate every training battery, then
+#                  sklearn train_test_split(test_size=0.2, random_state=420).
+#   chronological  per-battery cycle-order split: the first 80% of each
+#                  battery's pairs train, the tail 20% validate, with the pair
+#                  straddling the cut dropped so no raw row is shared.
+INNER_SPLIT_CHOICES = ("pooled_random", "chronological")
+
+# Cumulative train fractions per segment.  Condition 1 keeps the legacy
+# 80/20-then-80/20 structure (64/16/20 over rows); Condition 2 is the 80/20
+# split the paper's train_2/valid_2 loaders expose.
+CHRONO_FRACTIONS_CONDITION_1 = (0.64, 0.8)
+CHRONO_FRACTIONS_CONDITION_2 = (0.8,)
+
+
+def _resolve_inner_split(args) -> str:
+    """Read ``inner_split`` from an argparse namespace (default: legacy)."""
+    value = getattr(args, "inner_split", None)
+    if value is None:
+        return "pooled_random"
+    if value not in INNER_SPLIT_CHOICES:
+        raise ValueError(
+            "inner_split must be one of %s, got %r" % (INNER_SPLIT_CHOICES, value))
+    return value
+
+
+def _chronological_segment_bounds(n_pairs: int, fractions: Sequence[float]) -> List[Tuple[int, int]]:
+    """Pair-index bounds of ``len(fractions) + 1`` chronological segments.
+
+    ``fractions`` are cumulative train fractions measured on the pair count
+    (``(0.8,)`` for train/valid, ``(0.64, 0.8)`` for train/valid/test).  Each
+    cut index ``k`` starts the next segment at ``k + 1``: pair ``k`` spans raw
+    rows ``k`` and ``k + 1`` and is therefore dropped, so neighbouring segments
+    never share a raw row.  Every segment keeps at least one pair.
+    """
+    n_segments = len(fractions) + 1
+    minimum_pairs = 2 * n_segments - 1
+    if n_pairs < minimum_pairs:
+        raise ValueError(
+            "chronological inner split needs at least %d pairs per battery, got %d"
+            % (minimum_pairs, n_pairs))
+    bounds: List[Tuple[int, int]] = []
+    start = 0
+    for index, fraction in enumerate(fractions):
+        cut = int(np.floor(fraction * n_pairs))
+        cut = max(cut, start + 1)
+        # keep at least one pair for every segment that still has to follow
+        remaining = n_segments - 1 - index
+        cut = min(cut, n_pairs - remaining - 1)
+        bounds.append((start, cut))
+        start = cut + 1
+    bounds.append((start, n_pairs))
+    return bounds
+
+
+def _split_pairs_chronologically(battery_pairs, fractions: Sequence[float]):
+    """Split per-battery ``(x1, x2, y1, y2)`` blocks in cycle order.
+
+    ``battery_pairs`` is one ``(x1, x2, y1, y2)`` tuple of numpy arrays per
+    training battery, in the caller's battery order.  Returns one
+    ``(X1, X2, Y1, Y2)`` tuple of concatenated float tensors per segment, in
+    the same battery order, so training/validation keep the original cycle
+    layout.
+    """
+    segments = [[] for _ in range(len(fractions) + 1)]
+    for x1, x2, y1, y2 in battery_pairs:
+        bounds = _chronological_segment_bounds(len(x1), fractions)
+        for segment, (start, stop) in zip(segments, bounds):
+            if stop > start:
+                segment.append((x1[start:stop], x2[start:stop],
+                                y1[start:stop], y2[start:stop]))
+    packaged = []
+    for segment in segments:
+        if not segment:
+            raise ValueError("chronological inner split produced an empty segment")
+        x1, x2, y1, y2 = (
+            torch.from_numpy(np.concatenate([block[col] for block in segment], axis=0)).float()
+            for col in range(4))
+        packaged.append((x1, x2, y1.view(-1, 1), y2.view(-1, 1)))
+    return packaged
+
 
 class DF():
     def __init__(self,args):
@@ -63,6 +146,23 @@ class DF():
 
             df.iloc[:,:-1] = f_df
 
+        if getattr(self.args, 'temporal_delta', False):
+            # User-specified adjacent-cycle contrast block: central difference
+            # (x[i+1]-x[i-1])/2 on interior rows, one-sided differences on the
+            # first/last retained rows.  Computed on the min-maxed features of
+            # each battery after 3-sigma filtering; bounded in [-2, 2].
+            arr = df.iloc[:, :-1].to_numpy(dtype=float)
+            feats_ = arr[:, :-1]
+            n_rows = feats_.shape[0]
+            delta_ = np.zeros_like(feats_)
+            if n_rows >= 2:
+                delta_[0] = feats_[1] - feats_[0]
+                delta_[-1] = feats_[-1] - feats_[-2]
+                if n_rows >= 3:
+                    delta_[1:-1] = 0.5 * (feats_[2:] - feats_[:-2])
+            for k in range(delta_.shape[1]):
+                df.insert(df.shape[1] - 1, 'delta_%d' % k, delta_[:, k])
+
         return df
 
     def load_one_battery(self,path,nominal_capacity=None):
@@ -89,15 +189,19 @@ class DF():
         :param batch_size: batch size
         :return: Dataloader
         '''
+        inner_split = _resolve_inner_split(self.args)
         X1, X2, Y1, Y2 = [], [], [], []
+        battery_pairs = []
         if self.args.log_dir is not None and self.args.save_folder is not None:
             save_name = os.path.join(self.args.save_folder,self.args.log_dir)
             write_to_txt(save_name,'data path:')
             write_to_txt(save_name,str(path_list))
+            write_to_txt(save_name,'inner split: ' + inner_split)
         for path in path_list:
             (x1, y1), (x2, y2) = self.load_one_battery(path, nominal_capacity)
             # print(path)
             # print(x1.shape, x2.shape, y1.shape, y2.shape)
+            battery_pairs.append((x1, x2, y1, y2))
             X1.append(x1)
             X2.append(x2)
             Y1.append(y1)
@@ -131,17 +235,36 @@ class DF():
         # 2. The incoming path_list is the battery ID of [training set] and [testing set].
         #     In this case, you only need to randomly divide the training set and test set according to 8:2.
         # 3. The incoming path_list is the battery ID of the [test set], so there is no need to divide it and it can be directly encapsulated into a dataloader.
+        #
+        # inner_split='chronological' replaces both random partitions below with a
+        # per-battery cycle-order split (see _split_pairs_chronologically): every
+        # training battery contributes its earliest pairs to train and its latest
+        # pairs to validation, and the pair straddling the cut is dropped so the
+        # two sides never share a raw row.  inner_split='pooled_random' (default)
+        # reproduces the legacy behaviour bit for bit.
+        if inner_split == 'chronological':
+            (train_X1, train_X2, train_Y1, train_Y2), \
+                (valid_X1, valid_X2, valid_Y1, valid_Y2), \
+                (test_X1, test_X2, test_Y1, test_Y2) = _split_pairs_chronologically(
+                    battery_pairs, CHRONO_FRACTIONS_CONDITION_1)
+            (train_X1_2, train_X2_2, train_Y1_2, train_Y2_2), \
+                (valid_X1_2, valid_X2_2, valid_Y1_2, valid_Y2_2) = _split_pairs_chronologically(
+                    battery_pairs, CHRONO_FRACTIONS_CONDITION_2)
+        else:
+            # Condition 1
+            # 1.1 划分训练集和测试集
+            split = int(tensor_X1.shape[0] * 0.8)
+            train_X1, test_X1 = tensor_X1[:split], tensor_X1[split:]
+            train_X2, test_X2 = tensor_X2[:split], tensor_X2[split:]
+            train_Y1, test_Y1 = tensor_Y1[:split], tensor_Y1[split:]
+            train_Y2, test_Y2 = tensor_Y2[:split], tensor_Y2[split:]
+            # 1.2 划分训练集和验证集
+            train_X1, valid_X1, train_X2, valid_X2, train_Y1, valid_Y1, train_Y2, valid_Y2 = \
+                train_test_split(train_X1, train_X2, train_Y1, train_Y2, test_size=0.2, random_state=420)
 
-        # Condition 1
-        # 1.1 划分训练集和测试集
-        split = int(tensor_X1.shape[0] * 0.8)
-        train_X1, test_X1 = tensor_X1[:split], tensor_X1[split:]
-        train_X2, test_X2 = tensor_X2[:split], tensor_X2[split:]
-        train_Y1, test_Y1 = tensor_Y1[:split], tensor_Y1[split:]
-        train_Y2, test_Y2 = tensor_Y2[:split], tensor_Y2[split:]
-        # 1.2 划分训练集和验证集
-        train_X1, valid_X1, train_X2, valid_X2, train_Y1, valid_Y1, train_Y2, valid_Y2 = \
-            train_test_split(train_X1, train_X2, train_Y1, train_Y2, test_size=0.2, random_state=420)
+            # Condition 2
+            train_X1_2, valid_X1_2, train_X2_2, valid_X2_2, train_Y1_2, valid_Y1_2, train_Y2_2, valid_Y2_2 = \
+                train_test_split(tensor_X1, tensor_X2, tensor_Y1, tensor_Y2, test_size=0.2, random_state=420)
 
         train_loader = DataLoader(TensorDataset(train_X1, train_X2, train_Y1, train_Y2),
                                   batch_size=self.args.batch_size,
@@ -153,13 +276,10 @@ class DF():
                                  batch_size=self.args.batch_size,
                                  shuffle=False)
 
-        # Condition 2
-        train_X1, valid_X1, train_X2, valid_X2, train_Y1, valid_Y1, train_Y2, valid_Y2 = \
-            train_test_split(tensor_X1, tensor_X2, tensor_Y1, tensor_Y2, test_size=0.2, random_state=420)
-        train_loader_2 = DataLoader(TensorDataset(train_X1, train_X2, train_Y1, train_Y2),
+        train_loader_2 = DataLoader(TensorDataset(train_X1_2, train_X2_2, train_Y1_2, train_Y2_2),
                                   batch_size=self.args.batch_size,
                                   shuffle=True)
-        valid_loader_2 = DataLoader(TensorDataset(valid_X1, valid_X2, valid_Y1, valid_Y2),
+        valid_loader_2 = DataLoader(TensorDataset(valid_X1_2, valid_X2_2, valid_Y1_2, valid_Y2_2),
                                   batch_size=self.args.batch_size,
                                   shuffle=True)
 

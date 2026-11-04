@@ -1,8 +1,8 @@
-"""One-click reproduction of the LincPINN experiment suite.
+"""One-click reproduction of the AdaptiveInvariantPINN experiment suite.
 
 Covers the regular SOH, small-sample and cross-dataset transfer suites of
 the CMAME paper, running both the original PINN (Model.Model.PINN) and the
-ported LincPINN via the same dataloader splits.
+ported AdaptiveInvariantPINN via the same dataloader splits.
 
 Usage (from the repository root):
     python scripts/reproduce.py --help
@@ -12,7 +12,7 @@ Usage (from the repository root):
 
 Each phase is resumable: existing Experiment*/{true,pred}_label.npy skip retraining.
 Results are written under results/reproduce/{phase}/{model}/... so the
-hand-graded results/LincPINN and results/Ours trees are untouched.
+hand-graded results/AdaptiveInvariantPINN and results/Ours trees are untouched.
 
 Metrics are aggregated battery-wise from the saved npy pairs with the gap
 thresholds XJTU 0.05 / HUST 0.10 / TJU 0.07 / MIT 0.07. A battery's cycle
@@ -93,6 +93,9 @@ def make_loaders_for_phase(dataset: str, batch: Optional[str | int], args, small
 
     ``small_sample`` truncates the target train battery list (used by the
     transfer fine-tuning protocol, which adapts on 1 target battery).
+
+    The inner train/validation partition follows ``args.inner_split``
+    (``pooled_random`` default, or ``chronological``) via the dataloader.
     """
     if dataset == "XJTU":
         assert batch in XJTU_BATCHES
@@ -229,15 +232,18 @@ def run_adaptive_pinn(dataloaders: Dict[str, object], save_folder: Path, args) -
     return true, pred
 
 
-def build_orig_args(dataset: str, batch: Optional[str | int]) -> argparse.Namespace:
+def build_orig_args(dataset: str, batch: Optional[str | int],
+                    inner_split: str = "pooled_random",
+                    epochs_override: Optional[int] = None) -> argparse.Namespace:
     """Hyper-parameters matching the upstream PINN4SOH per-dataset defaults."""
     base = dict(
         data=dataset,
         batch_size=256, normalization_method="min-max",
-        epochs=200, early_stop=20,
+        epochs=epochs_override if epochs_override is not None else 200, early_stop=20,
         warmup_epochs=30, warmup_lr=0.002, lr=0.01, final_lr=0.0002, lr_F=0.001,
         F_layers_num=3, F_hidden_dim=60,
         log_dir="logging.txt", save_folder=None,
+        inner_split=inner_split,
     )
     if dataset == "XJTU":
         base.update(dict(train_batch=0, test_batch=1, batch=batch, alpha=0.7, beta=0.2))
@@ -253,10 +259,13 @@ def build_orig_args(dataset: str, batch: Optional[str | int]) -> argparse.Namesp
 
 
 def build_adaptive_args(dataset: str, batch: Optional[str | int], latent_dim: Optional[int] = None,
-                        feature_scaler: str = "identity", include_row_mean: bool = True,
-                        small_gamma: Optional[float] = None, include_anchored: bool = True,
-                        operator_weight: Optional[float] = None) -> argparse.Namespace:
-    """Hyper-parameters for LincPINN.
+                        feature_scaler: str = "identity", include_row_mean: bool = False,
+                        small_gamma: Optional[float] = None, include_anchored: bool = False,
+                        operator_weight: Optional[float] = None, map_mode: str = "invariant",
+                        temporal_delta: bool = True,
+                        epochs_override: Optional[int] = None,
+                        inner_split: str = "pooled_random") -> argparse.Namespace:
+    """Hyper-parameters for AdaptiveInvariantPINN.
 
     Final model configuration: 8-dim latent bottleneck, self-normalizing
     invariant transform without a source-fitted scaler, and the row-mean
@@ -270,17 +279,20 @@ def build_adaptive_args(dataset: str, batch: Optional[str | int], latent_dim: Op
     base = dict(
         data=dataset,
         batch_size=256, normalization_method="min-max",
-        epochs=200, early_stop=20,
+        epochs=epochs_override if epochs_override is not None else 200, early_stop=20,
         warmup_epochs=30, warmup_lr=0.002, lr=0.01, final_lr=0.0002, lr_F=0.001,
         F_layers_num=3, F_hidden_dim=60,
-        input_dim=17, latent_dim=latent_dim if latent_dim is not None else 8,
+        input_dim=33 if temporal_delta else 17, latent_dim=latent_dim if latent_dim is not None else 8,
         u_hidden_dim=60, invariant_epsilon=1e-6,
         feature_scaler=feature_scaler,
         include_row_mean=include_row_mean,
         include_anchored=include_anchored,
+        map_mode=map_mode,
+        temporal_delta=temporal_delta,
         alpha=0.5 if operator_weight is None else operator_weight,
         gamma={"XJTU": 0.2, "TJU": 0.05, "HUST": 0.2, "MIT": 0.02}[dataset],
         log_dir="logging.txt", save_folder=None,
+        inner_split=inner_split,
     )
     if small_gamma is not None:
         base["gamma"] = small_gamma
@@ -317,8 +329,11 @@ def _set_seed(seed: int) -> None:
 def phase_regular(repeats: int, models: List[str], datasets: Optional[List[str]], out_root: Path,
                   latent_dim: Optional[int] = None, batches: Optional[List[str]] = None,
                   feature_scaler: str = "source", include_row_mean: bool = False,
-                  include_anchored: bool = True, operator_weight: Optional[float] = None,
-                  seed_base: Optional[int] = None, gamma_override: Optional[float] = None):
+                  include_anchored: bool = False, operator_weight: Optional[float] = None,
+                  seed_base: Optional[int] = None, gamma_override: Optional[float] = None,
+                  map_mode: str = "invariant", temporal_delta: bool = True,
+                  epochs_override: Optional[int] = None,
+                  inner_split: str = "pooled_random"):
     """Table 2: regular SOH per-batch/per-dataset, 10 repeats."""
     plan: List[Tuple[str, Optional[str | int]]] = []
     if datasets is None or "XJTU" in datasets:
@@ -349,7 +364,8 @@ def phase_regular(repeats: int, models: List[str], datasets: Optional[List[str]]
                 if seed_base is not None:
                     _set_seed(seed_base + exp)
                 if model == "orig":
-                    args = build_orig_args(dataset, batch)
+                    args = build_orig_args(dataset, batch, inner_split=inner_split,
+                                           epochs_override=epochs_override)
                     # TJU/HUST/MIT orig defaults used 512 batch; keep but cap if OOM risk
                     if dataset in ("TJU", "HUST", "MIT"):
                         args.batch_size = 256  # cap for 4060 8GB determinism
@@ -361,7 +377,11 @@ def phase_regular(repeats: int, models: List[str], datasets: Optional[List[str]]
                                                include_row_mean=include_row_mean,
                                                include_anchored=include_anchored,
                                                operator_weight=operator_weight,
-                                               small_gamma=gamma_override)
+                                               small_gamma=gamma_override,
+                                               map_mode=map_mode,
+                                               temporal_delta=temporal_delta,
+                                               epochs_override=epochs_override,
+                                               inner_split=inner_split)
                     if dataset in ("TJU", "HUST", "MIT"):
                         args.batch_size = 256
                     loaders = make_loaders_for_phase(dataset, batch, args)
@@ -372,9 +392,11 @@ def phase_regular(repeats: int, models: List[str], datasets: Optional[List[str]]
 def phase_small(repeats: int, models: List[str], out_root: Path,
                 datasets: Optional[List[str]] = None, latent_dim: Optional[int] = None,
                 feature_scaler: str = "source", include_row_mean: bool = False,
-                small_gamma: Optional[float] = None, include_anchored: bool = True,
+                small_gamma: Optional[float] = None, include_anchored: bool = False,
                 operator_weight: Optional[float] = None, seed_base: Optional[int] = None,
-                combo: int = 0):
+                combo: int = 0, map_mode: str = "invariant", temporal_delta: bool = True,
+                epochs_override: Optional[int] = None,
+                inner_split: str = "pooled_random"):
     """Table 3 / Fig.5: small-sample (1-4 train batteries).
 
     - XJTU: only batch 2C (paper main) with n=1..4
@@ -400,7 +422,8 @@ def phase_small(repeats: int, models: List[str], out_root: Path,
                 if seed_base is not None:
                     _set_seed(seed_base + exp)
                 if model == "orig":
-                    args = build_orig_args(dataset, batch)
+                    args = build_orig_args(dataset, batch, inner_split=inner_split,
+                                           epochs_override=epochs_override)
                     args.batch_size = 128
                     if dataset == "XJTU":
                         args.alpha = 0.5; args.beta = 10  # orig small_sample override
@@ -413,7 +436,11 @@ def phase_small(repeats: int, models: List[str], out_root: Path,
                                                include_row_mean=include_row_mean,
                                                small_gamma=small_gamma,
                                                include_anchored=include_anchored,
-                                               operator_weight=operator_weight)
+                                               operator_weight=operator_weight,
+                                               map_mode=map_mode,
+                                               temporal_delta=temporal_delta,
+                                               epochs_override=epochs_override,
+                                               inner_split=inner_split)
                     args.batch_size = 128
                     loaders = make_loaders_for_small(dataset, batch, n, args, rotate=combo)
                     run_adaptive_pinn(loaders, exp_dir, args)
@@ -480,21 +507,29 @@ def main():
     p.add_argument("--datasets", nargs="*", default=None, choices=["XJTU", "TJU", "HUST", "MIT"],
                    help="filter for regular/small phases")
     p.add_argument("--latent_dim", type=int, default=None,
-                   help="override LincPINN latent_dim (default 8)")
+                   help="override AdaptiveInvariantPINN latent_dim (default 8)")
     p.add_argument("--feature_scaler", choices=["source", "identity"], default="identity",
                    help="identity (default): use the self-normalizing row transform as-is; "
                         "source: z-score transformed features with moments fitted on "
                         "training rows")
-    p.add_argument("--include_row_mean", action=argparse.BooleanOptionalAction, default=True,
+    p.add_argument("--include_row_mean", action=argparse.BooleanOptionalAction, default=False,
                    help="append the row mean of the raw features as one extra "
                         "coordinate (restores the common-mode aging level)")
     p.add_argument("--small_gamma", type=float, default=None,
                    help="override the small-sample monotonicity weight (default: "
                         "the per-dataset gamma, e.g. 0.2 for XJTU)")
-    p.add_argument("--include_anchored", action=argparse.BooleanOptionalAction, default=True,
+    p.add_argument("--include_anchored", action=argparse.BooleanOptionalAction, default=False,
                    help="keep the anchored coordinate channel (each feature's "
                         "offset from the first feature of the same row) of the "
                         "invariant feature map")
+    p.add_argument("--map_mode", choices=["invariant", "identity"], default="invariant",
+                   help="feature map: invariant (paper row map) or identity "
+                        "(raw row passthrough, PINN4SOH-style input)")
+    p.add_argument("--temporal_delta", action=argparse.BooleanOptionalAction, default=True,
+                   help="append the rate-normalized adjacent-cycle difference block "
+                        "(16 dims); row layout becomes [features, progress, delta]")
+    p.add_argument("--epochs", type=int, default=None,
+                   help="override the 200-epoch cap (smoke tests only)")
     p.add_argument("--operator_weight", type=float, default=None,
                    help="override the shared-operator loss weight (default 0.5; "
                         "0 ablates the operator/PDE loss entirely)")
@@ -511,6 +546,13 @@ def main():
                         "outputs go to <out>/combo{k}, combo 0 = paper selection")
     p.add_argument("--batches", nargs="*", default=None,
                    help="regular phase only: run only these batches, e.g. 2C R2.5 0 2")
+    p.add_argument("--inner_split", choices=["pooled_random", "chronological"],
+                   default="pooled_random",
+                   help="inner train/validation partition of the training batteries: "
+                        "pooled_random (default, legacy: concatenate then "
+                        "train_test_split(random_state=420)) or chronological "
+                        "(per-battery cycle order, first 80%% train / last 20%% "
+                        "valid, boundary pair dropped)")
     p.add_argument("--out", type=str, default="results/reproduce",
                    help="output root (relative to project)")
     args = p.parse_args()
@@ -534,7 +576,11 @@ def main():
                           include_anchored=args.include_anchored,
                           operator_weight=args.operator_weight,
                           seed_base=args.seed_base,
-                          gamma_override=args.gamma_override)
+                          gamma_override=args.gamma_override,
+                          map_mode=args.map_mode,
+                          temporal_delta=args.temporal_delta,
+                          epochs_override=args.epochs,
+                          inner_split=args.inner_split)
         elif ph == "small":
             combos = range(args.combos) if args.combos else [0]
             for combo in combos:
@@ -545,7 +591,11 @@ def main():
                             small_gamma=args.small_gamma,
                             include_anchored=args.include_anchored,
                             operator_weight=args.operator_weight,
-                            seed_base=args.seed_base, combo=combo)
+                            seed_base=args.seed_base, combo=combo,
+                            map_mode=args.map_mode,
+                            temporal_delta=args.temporal_delta,
+                            epochs_override=args.epochs,
+                            inner_split=args.inner_split)
         elif ph == "transfer":
             print("transfer phase: use main_adaptation - fine-tuning.py (orig AdaPINN) "
                   "and main_adaptive_transfer.py (adaptive). "
@@ -555,7 +605,8 @@ def main():
 
     # Write manifest
     manifest = dict(phase=args.phase, model=args.model, repeats=args.repeats,
-                    datasets=args.datasets, out=str(out_root))
+                    datasets=args.datasets, out=str(out_root),
+                    inner_split=args.inner_split)
     (out_root / "manifest.json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
     print(f"\nDone. Results under {out_root}")
 

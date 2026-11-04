@@ -7,7 +7,7 @@ Both models now follow the same two-stage protocol:
   orig     load the pretrained source PINN (``pretrained model/``), freeze
            dynamical_F, fine-tune solution_u on 1 target battery
            (AdaPINN, per-pair adaptation_lr from the paper fine-tune script)
-  adaptive train LincPINN on the source (source-fitted scaler),
+  adaptive train AdaptiveInvariantPINN on the source (source-fitted scaler),
            freeze shared_operator + feature scaler, fine-tune solution_u on
            the same 1 target battery with the same adaptation_lr
 
@@ -79,7 +79,25 @@ PAIRS = [
     ("HUST", None, "XJTU", 0, 0.0004),
     ("XJTU", 0, "TJU", 0, 0.003),
     ("TJU", 0, "XJTU", 0, 0.0004),
+    # Added 2026-10-11 (A4 campaign): complete the six-edge directed graph
+    # over {XJTU-2C, HUST, TJU-0}; adaptation_lr = majority default 4e-4
+    # (no per-direction tuning for the new directions).
+    ("HUST", None, "TJU", 0, 0.0004),
+    ("TJU", 0, "HUST", None, 0.0004),
 ]
+
+# Feature-map configuration threaded from CLI into every build_adaptive_args
+# call (A4 = invariant + temporal_delta + no anchored + no row mean).
+MAP_KWARGS: dict = {}
+
+# Inner train/validation partition of the training batteries, threaded from
+# ``--inner_split`` into both the source-training loaders and the 1-battery
+# target fine-tuning loaders (default: the legacy pooled random split).
+INNER_SPLIT = "pooled_random"
+
+# Optional epoch cap for smoke tests (``--epochs``): overrides both the source
+# training cap and the target adaptation cap.  ``None`` keeps 200/200.
+EPOCHS_OVERRIDE = None
 
 # Original PINN4SOH loss weights (alpha, beta), per target dataset
 # (upstream PINN4SOH main_*.py defaults).
@@ -134,13 +152,15 @@ def run_orig_finetune(src_data, src_idx, tgt_data, tgt_idx, adaptation_lr, exp_d
         )
     args = argparse.Namespace(
         batch_size=128, normalization_method="min-max",
-        epochs=200, early_stop=10,
+        epochs=200 if EPOCHS_OVERRIDE is None else EPOCHS_OVERRIDE,
+        early_stop=10,
         warmup_epochs=30, warmup_lr=0.002, lr=0.01, final_lr=0.0002, lr_F=0.001,
         F_layers_num=3, F_hidden_dim=60,
         alpha=alpha, beta=beta,
         log_dir="logging.txt", save_folder=str(exp_dir),
         pretrain_model=str(pretrain_path),
-        adaptation_lr=adaptation_lr, adaptation_epochs=200,
+        adaptation_lr=adaptation_lr,
+        adaptation_epochs=200 if EPOCHS_OVERRIDE is None else EPOCHS_OVERRIDE,
         target_data=tgt_data,
         target_batch=-1 if tgt_idx is None else tgt_idx,
         source_batch=-1 if src_idx is None else src_idx,
@@ -164,10 +184,14 @@ def run_adaptive_finetune(src_data, src_idx, tgt_data, tgt_idx, adaptation_lr, e
     from Model.adaptive_trainer import AdaptivePINNTrainer
     from reproduce import build_adaptive_args, make_loaders_for_phase
 
-    src_args = build_adaptive_args(src_data, batch_arg(src_data, src_idx))
+    src_args = build_adaptive_args(src_data, batch_arg(src_data, src_idx), **MAP_KWARGS,
+                                   inner_split=INNER_SPLIT,
+                                   epochs_override=EPOCHS_OVERRIDE)
     src_args.batch_size = 256
     src_loaders = make_loaders_for_phase(src_data, batch_arg(src_data, src_idx), src_args)
-    tgt_args = build_adaptive_args(tgt_data, batch_arg(tgt_data, tgt_idx))
+    tgt_args = build_adaptive_args(tgt_data, batch_arg(tgt_data, tgt_idx), **MAP_KWARGS,
+                                   inner_split=INNER_SPLIT,
+                                   epochs_override=EPOCHS_OVERRIDE)
     tgt_args.batch_size = 128
     # 1 target battery for adaptation train/valid, full target test for scoring
     tgt_loaders = make_loaders_for_phase(tgt_data, batch_arg(tgt_data, tgt_idx), tgt_args, small_sample=1)
@@ -189,7 +213,7 @@ def run_adaptive_finetune(src_data, src_idx, tgt_data, tgt_idx, adaptation_lr, e
         validloader=tgt_loaders["valid"],
         testloader=tgt_loaders["test"],
         adaptation_lr=adaptation_lr,
-        adaptation_epochs=200,
+        adaptation_epochs=200 if EPOCHS_OVERRIDE is None else EPOCHS_OVERRIDE,
         early_stop=10,
     )
 
@@ -217,11 +241,38 @@ def main():
     ap.add_argument("--out", default="results/transfer",
                     help="output root (aggregate with scripts/evaluate.py "
                          "--phase transfer --in results/transfer --out evaluation)")
+    ap.add_argument("--map_mode", choices=["invariant", "identity"], default="invariant")
+    ap.add_argument("--temporal_delta", action=argparse.BooleanOptionalAction, default=True)
+    ap.add_argument("--include_anchored", action=argparse.BooleanOptionalAction, default=False)
+    ap.add_argument("--include_row_mean", action=argparse.BooleanOptionalAction, default=False)
+    ap.add_argument("--operator_weight", type=float, default=None)
+    ap.add_argument("--latent_dim", type=int, default=None)
+    ap.add_argument("--inner_split", choices=["pooled_random", "chronological"],
+                    default="pooled_random",
+                    help="inner train/validation partition of the training "
+                         "batteries, applied to BOTH the source-training loaders "
+                         "and the 1-battery target fine-tuning loaders "
+                         "(default: legacy pooled random)")
+    ap.add_argument("--epochs", type=int, default=None,
+                    help="override the 200-epoch cap for source training and "
+                         "target adaptation (smoke tests only)")
+    ap.add_argument("--pairs", type=str, default=None,
+                    help="comma-separated pair labels to restrict, e.g. "
+                         "HUST-to-XJTU-2C (default: all six pairs)")
     ap.add_argument("--seed_base", type=int, default=0,
                     help="seed of repeat k is seed_base + k (default 0: "
                          "seeded, deterministic reruns)")
     args = ap.parse_args()
+    global INNER_SPLIT, EPOCHS_OVERRIDE
+    INNER_SPLIT = args.inner_split
+    EPOCHS_OVERRIDE = args.epochs
+    MAP_KWARGS.update(dict(map_mode=args.map_mode, temporal_delta=args.temporal_delta,
+                           include_anchored=args.include_anchored,
+                           include_row_mean=args.include_row_mean,
+                           operator_weight=args.operator_weight,
+                           latent_dim=args.latent_dim))
     models = ["orig", "adaptive"] if args.model == "both" else [args.model]
+    wanted_pairs = set(args.pairs.split(",")) if args.pairs else None
     out_root = PROJECT_ROOT / args.out
     out_root.mkdir(parents=True, exist_ok=True)
     try:
@@ -247,6 +298,10 @@ def main():
                   "(folder 'pretrained model') or rerun with --model adaptive.")
     for model in models:
         for pair in PAIRS:
+            src_data, src_idx, tgt_data, tgt_idx, _lr = pair
+            label = f"{batch_label(src_data, src_idx)}-to-{batch_label(tgt_data, tgt_idx)}"
+            if wanted_pairs is not None and label not in wanted_pairs:
+                continue
             for exp in range(1, args.repeats + 1):
                 _set_seed(args.seed_base + exp)
                 run_one(pair, exp, model, out_root)

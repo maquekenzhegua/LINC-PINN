@@ -52,6 +52,38 @@ def eval_metrix(true_label,pred_label):
 
     return [MAE,MAPE,MSE,RMSE]
 
+def battery_metrics(true_label, pred_label, gap):
+    """Split a run back into batteries and average the per-battery errors.
+
+    Adjacent rows are treated as a battery boundary when the true SOH jumps by
+    more than ``gap``; the reported MAE/MAPE/RMSE is then the mean over
+    batteries, which is the aggregation used in the manuscript.
+    """
+    true_label = np.asarray(true_label).reshape(-1)
+    pred_label = np.asarray(pred_label).reshape(-1)
+    splits = np.where(np.diff(true_label) > gap)[0]
+    starts = [0] + (splits + 1).tolist()
+    ends = splits.tolist() + [len(true_label) - 1]
+    maes, mapes, rmses = [], [], []
+    for s, e in zip(starts, ends):
+        t = true_label[s:e + 1]
+        q = pred_label[s:e + 1]
+        if len(t) < 2:
+            continue
+        mae, mape, _mse, rmse = eval_metrix(t, q)
+        maes.append(mae); mapes.append(mape); rmses.append(rmse)
+    if not mapes:
+        return float("nan"), float("nan"), float("nan")
+    return float(np.mean(maes)), float(np.mean(mapes)), float(np.mean(rmses))
+
+
+def read_run(folder):
+    """Read one Experiment folder and return (true, pred) arrays."""
+    import os
+    true_label = np.load(os.path.join(folder, "true_label.npy"))
+    pred_label = np.load(os.path.join(folder, "pred_label.npy"))
+    return true_label, pred_label
+
 def write_to_txt(txt_name,txt):
     with open(txt_name,'a') as f:
         f.write(txt)

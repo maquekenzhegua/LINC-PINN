@@ -1,26 +1,17 @@
-# datasets are public downloads, not redistributed (root data/ only;
-# figures/data/ holds the tracked figure-source CSVs)
-/data/
-
-# fresh-run experiment outputs (repo ROOT only). Anchored so they never
-# swallow the shipped paper-data mirror paper_data/results + paper_data/evaluation
-# (2026-09-17: unanchored results*/+evaluation*/ silently excluded the whole
-# shipped mirror — do not un-anchor these again)
-/results/
-/evaluation/
-/evaluation_*/
-
-# shipped paper data: per-run predictions + summaries behind every
-# table/figure (fully tracked; see paper_data/README.md)
-
-# rendered figures (regenerable via figures/matlab)
-figures/out/
-preview_*.png
-
 # python / dev clutter
 __pycache__/
 *.pyc
-*.pth
 .ipynb_checkpoints/
 .DS_Store
 Thumbs.db
+
+# trained checkpoints (the archival record is results/, not the weights)
+*.pth
+
+# fresh-run outputs of the retraining scripts go under evaluation/
+/evaluation/
+/evaluation_*/
+
+# regenerated figure sources (plotter/data/*.csv are the shipped ones)
+plotter/out/
+preview_*.png

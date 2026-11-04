@@ -9,9 +9,9 @@ experiment dirs for later analysis).
 
 Defaults reproduce the in-tree aggregation:
     python scripts/summarize_baseline_transfer.py
-Path A (shipped paper_data, release layout):
+Path A (shipped results mirror, release layout):
     python scripts/summarize_baseline_transfer.py \
-        --baselines-in paper_data/results/baselines --main-in paper_data/results/transfer \
+        --baselines-in results/baselines --main-in results/transfer \
         --out evaluation/baselines
 """
 from __future__ import annotations

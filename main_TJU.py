@@ -33,7 +33,16 @@ def get_args():
     # model related
     parser.add_argument('--F_layers_num', type=int, default=3, help='the layers num of F')
     parser.add_argument('--F_hidden_dim', type=int, default=60, help='the hidden dim of F')
-    parser.add_argument('--input_dim', type=int, default=17, help='16 charge features plus cycle progress')
+    parser.add_argument('--input_dim', type=int, default=33, help='16 charge features, cycle progress, and 16 adjacent-cycle changes')
+    parser.add_argument('--include_row_mean', action=argparse.BooleanOptionalAction, default=False,
+                        help='append the within-row mean as a coordinate (paper: off)')
+    parser.add_argument('--include_anchored', action=argparse.BooleanOptionalAction, default=False,
+                        help='append the first-column anchored block (paper: off)')
+    parser.add_argument('--map_mode', type=str, default='invariant', choices=('invariant', 'identity'),
+                        help='row map: invariant standardization or identity')
+    parser.add_argument('--temporal_delta', action=argparse.BooleanOptionalAction, default=True,
+                        help='append the adjacent-cycle change block (paper: on)')
+
     parser.add_argument('--latent_dim', type=int, default=8, help='shared degradation-state dimension')
     parser.add_argument('--u_hidden_dim', type=int, default=60, help='invariant encoder hidden dimension')
     parser.add_argument('--invariant_epsilon', type=float, default=1e-6, help='row-scale stability constant')
@@ -44,7 +53,7 @@ def get_args():
     parser.add_argument('--gamma', type=float, default=0.05, help='monotonicity penalty weight (final paper config)')
 
     parser.add_argument('--log_dir', type=str, default='logging.txt', help='log dir, if None, do not save')
-    parser.add_argument('--save_folder', type=str, default='results/LincPINN/TJU', help='save folder')
+    parser.add_argument('--save_folder', type=str, default='results/AdaptiveInvariantPINN/TJU', help='save folder')
 
     args = parser.parse_args()
 
@@ -102,9 +111,9 @@ def main():
         setattr(args, 'batch', batch)
         for e in range(10):
             if args.in_same_batch:
-                save_folder = 'results/LincPINN/TJU/' + str(batch) + '-' + str(batch) + '/Experiment' + str(e + 1)
+                save_folder = 'results/AdaptiveInvariantPINN/TJU/' + str(batch) + '-' + str(batch) + '/Experiment' + str(e + 1)
             else:
-                save_folder = 'results/LincPINN/TJU/' + str(args.train_batch) + '-' + str(
+                save_folder = 'results/AdaptiveInvariantPINN/TJU/' + str(args.train_batch) + '-' + str(
                     args.test_batch) + '/Experiment' + str(e + 1)
             setattr(args, "save_folder", save_folder)
             if not os.path.exists(save_folder):
@@ -121,7 +130,7 @@ def small_sample():
     for e in range(10):
         setattr(args,'in_same_batch',True)
         setattr(args,'batch',batch)
-        setattr(args,'save_folder',f'results/LincPINN/TJU-small-sample-{num_battery}/{batch}-{batch}/Experiment{e+1}')
+        setattr(args,'save_folder',f'results/AdaptiveInvariantPINN/TJU-small-sample-{num_battery}/{batch}-{batch}/Experiment{e+1}')
         setattr(args, 'batch_size', 128)
         if not os.path.exists(args.save_folder):
             os.makedirs(args.save_folder)

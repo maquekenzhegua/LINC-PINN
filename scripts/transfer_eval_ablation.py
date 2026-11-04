@@ -38,11 +38,13 @@ from scripts.reproduce import build_adaptive_args, make_loaders_for_phase  # noq
 def run_adaptive_finetune_no_operator(src_data, src_idx, tgt_data, tgt_idx, adaptation_lr, exp_dir: Path):
     """Identical to transfer_eval.run_adaptive_finetune except alpha = 0.0
     during source training (no operator-consistency loss)."""
-    src_args = build_adaptive_args(src_data, transfer_eval.batch_arg(src_data, src_idx))
+    src_args = build_adaptive_args(src_data, transfer_eval.batch_arg(src_data, src_idx),
+                                   **transfer_eval.MAP_KWARGS)
     src_args.batch_size = 256
     src_args.alpha = 0.0  # the ablation: no operator-consistency loss
     src_loaders = make_loaders_for_phase(src_data, transfer_eval.batch_arg(src_data, src_idx), src_args)
-    tgt_args = build_adaptive_args(tgt_data, transfer_eval.batch_arg(tgt_data, tgt_idx))
+    tgt_args = build_adaptive_args(tgt_data, transfer_eval.batch_arg(tgt_data, tgt_idx),
+                                   **transfer_eval.MAP_KWARGS)
     tgt_args.batch_size = 128
     tgt_loaders = make_loaders_for_phase(tgt_data, transfer_eval.batch_arg(tgt_data, tgt_idx), tgt_args, small_sample=1)
 
@@ -77,10 +79,24 @@ def main() -> None:
                     help="comma-separated pair labels to restrict, e.g. XJTU-2C-to-HUST")
     ap.add_argument("--out", default="results/ablation/no_operator/transfer",
                     help="output root for the ablation transfer runs")
+    ap.add_argument("--map_mode", choices=["invariant", "identity"], default="invariant")
+    ap.add_argument("--temporal_delta", action=argparse.BooleanOptionalAction, default=False)
+    ap.add_argument("--include_anchored", action=argparse.BooleanOptionalAction, default=True)
+    ap.add_argument("--include_row_mean", action=argparse.BooleanOptionalAction, default=True)
+    ap.add_argument("--operator_weight", type=float, default=None)
+    ap.add_argument("--latent_dim", type=int, default=None)
     ap.add_argument("--seed_base", type=int, default=0,
                     help="seed of repeat k is seed_base + k (default 0, "
                          "same deterministic reruns as transfer_eval)")
     args = ap.parse_args()
+    import argparse as _ap
+    transfer_eval.MAP_KWARGS.update(dict(
+        map_mode=getattr(args, "map_mode", "invariant"),
+        temporal_delta=getattr(args, "temporal_delta", False),
+        include_anchored=getattr(args, "include_anchored", True),
+        include_row_mean=getattr(args, "include_row_mean", True),
+        operator_weight=getattr(args, "operator_weight", None),
+        latent_dim=getattr(args, "latent_dim", None)))
     out_root = PROJECT_ROOT / args.out
     out_root.mkdir(parents=True, exist_ok=True)
     from scripts.provenance import record_provenance

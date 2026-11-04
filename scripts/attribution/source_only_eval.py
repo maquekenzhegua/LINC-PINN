@@ -53,10 +53,10 @@ def agg(values: List[float]) -> Dict:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--in-root", default="paper_data/results/transfer",
+    ap.add_argument("--in-root", default="results/transfer",
                     help="transfer results root with src_only_* arrays "
-                         "(default: shipped paper_data mirror)")
-    ap.add_argument("--ref", default="paper_data/evaluation/reproduce/summary_transfer.json",
+                         "(default: shipped results mirror)")
+    ap.add_argument("--ref", default="evaluation/reproduce/summary_transfer.json",
                     help="reference (fine-tuned) transfer summary for the comparison")
     ap.add_argument("--out", default="evaluation/source_only",
                     help="output directory (default: evaluation/source_only)")

@@ -12,8 +12,8 @@ Output: <eval-dir>/gamma_sweep_summary.csv
 
 Defaults reproduce the in-tree aggregation:
     python scripts/summarize_gamma_sweep.py
-Path A (shipped paper_data, release layout):
-    python scripts/summarize_gamma_sweep.py --results-root paper_data/results
+Path A (shipped results mirror, release layout):
+    python scripts/summarize_gamma_sweep.py --results-root results
 """
 
 from __future__ import annotations

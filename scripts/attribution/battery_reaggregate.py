@@ -22,11 +22,11 @@ Nothing in results/ or evaluation/ is modified: the label-gap aggregation
 stays authoritative for the main tables; this is an explicitly labeled
 supplementary analysis (paper states the label-gap interpretation).
 
-Run from the repository root (default inputs = shipped paper_data mirror,
+Run from the repository root (default inputs = shipped results mirror,
 default boundaries source = rebuild from the raw datasets under data/):
     python scripts/attribution/battery_reaggregate.py
 Path A (no datasets needed) reuses the shipped boundary arrays:
-    python scripts/attribution/battery_reaggregate.py --boundaries-from paper_data/evaluation/batteryid/boundaries
+    python scripts/attribution/battery_reaggregate.py --boundaries-from evaluation/batteryid/boundaries
 Optional: --with-baselines also aggregates the baselines trees.
 """
 from __future__ import annotations
@@ -167,15 +167,15 @@ def main() -> None:
     ap.add_argument("--repeats", type=int, default=10)
     ap.add_argument("--with-baselines", action="store_true",
                     help="also aggregate results/baselines outputs")
-    ap.add_argument("--results-root", default="paper_data/results",
+    ap.add_argument("--results-root", default="results",
                     help="results root holding reproduce/transfer/baselines "
-                         "(default: shipped paper_data mirror)")
-    ap.add_argument("--eval-root", default="paper_data/evaluation",
+                         "(default: shipped results mirror)")
+    ap.add_argument("--eval-root", default="evaluation",
                     help="label-gap summaries root used for the delta join "
-                         "(default: shipped paper_data mirror)")
+                         "(default: shipped results mirror)")
     ap.add_argument("--boundaries-from", default=None,
                     help="reuse shipped boundary arrays from this directory "
-                         "(e.g. paper_data/evaluation/batteryid/boundaries) "
+                         "(e.g. evaluation/batteryid/boundaries) "
                          "instead of rebuilding loaders from the raw datasets")
     ap.add_argument("--out", default="evaluation/batteryid",
                     help="output directory (default: evaluation/batteryid)")

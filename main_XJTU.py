@@ -34,7 +34,7 @@ def main():
         batch = batchs[i]
         setattr(args, 'batch', batch)
         for e in range(10):
-            save_folder = 'results/LincPINN/XJTU/' + str(i) + '-' + str(i) + '/Experiment' + str(e + 1)
+            save_folder = 'results/AdaptiveInvariantPINN/XJTU/' + str(i) + '-' + str(i) + '/Experiment' + str(e + 1)
             if not os.path.exists(save_folder):
                 os.makedirs(save_folder)
             log_dir = 'logging.txt'
@@ -56,7 +56,7 @@ def small_sample():
             setattr(args,'alpha',0.5)
             setattr(args,'beta',0.2)
             for e in range(10):
-                save_folder = f'results/LincPINN/XJTU-small-sample-{n}/' + str(i) + '-' + str(i) + '/Experiment' + str(e + 1)
+                save_folder = f'results/AdaptiveInvariantPINN/XJTU-small-sample-{n}/' + str(i) + '-' + str(i) + '/Experiment' + str(e + 1)
                 if not os.path.exists(save_folder):
                     os.makedirs(save_folder)
                 log_dir = 'logging.txt'
@@ -94,7 +94,16 @@ def get_args():
     # model related
     parser.add_argument('--F_layers_num', type=int, default=3, help='the layers num of F')
     parser.add_argument('--F_hidden_dim', type=int, default=60, help='the hidden dim of F')
-    parser.add_argument('--input_dim', type=int, default=17, help='16 charge features plus cycle progress')
+    parser.add_argument('--input_dim', type=int, default=33, help='16 charge features, cycle progress, and 16 adjacent-cycle changes')
+    parser.add_argument('--include_row_mean', action=argparse.BooleanOptionalAction, default=False,
+                        help='append the within-row mean as a coordinate (paper: off)')
+    parser.add_argument('--include_anchored', action=argparse.BooleanOptionalAction, default=False,
+                        help='append the first-column anchored block (paper: off)')
+    parser.add_argument('--map_mode', type=str, default='invariant', choices=('invariant', 'identity'),
+                        help='row map: invariant standardization or identity')
+    parser.add_argument('--temporal_delta', action=argparse.BooleanOptionalAction, default=True,
+                        help='append the adjacent-cycle change block (paper: on)')
+
     parser.add_argument('--latent_dim', type=int, default=8, help='shared degradation-state dimension')
     parser.add_argument('--u_hidden_dim', type=int, default=60, help='invariant encoder hidden dimension')
     parser.add_argument('--invariant_epsilon', type=float, default=1e-6, help='row-scale stability constant')
@@ -105,7 +114,7 @@ def get_args():
     parser.add_argument('--gamma', type=float, default=0.2, help='monotonicity penalty weight (final paper config)')
 
     parser.add_argument('--log_dir', type=str, default='text log.txt', help='log dir, if None, do not save')
-    parser.add_argument('--save_folder', type=str, default='results/LincPINN/XJTU', help='save folder')
+    parser.add_argument('--save_folder', type=str, default='results/AdaptiveInvariantPINN/XJTU', help='save folder')
 
     args = parser.parse_args()
     return args

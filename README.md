@@ -1,17 +1,17 @@
-# LINC-PINN
+# AdaptiveInvariantPINN
 
-Reference implementation of a **latent-increment physics-informed network** for
-lithium-ion battery **state-of-health (SOH) estimation** under **label
-scarcity**. This repository is the official implementation and experiment
-suite for our submission to *Journal of Energy Storage* (Elsevier).
+Reference implementation of the **latent-increment physics-informed network**
+for lithium-ion battery **state-of-health (SOH) estimation** under **label
+scarcity**. This repository is the official code and data release for our
+submission to *Journal of Energy Storage* (Elsevier).
 
 The constraint that physics-informed estimators usually write on the predicted
-SOH field needs a derivative a single record per cycle cannot supply. LINC-PINN
-moves it onto the internal state: a shared operator predicts the one-step
-increment of the latent state and is penalized against the increment the encoder
-produces. That increment is available on every retained cycle, labelled or not,
-so the penalty stays informative at the budgets where a field residual goes
-quiet.
+SOH field needs a derivative that a single record per cycle cannot supply. This
+model moves it onto the internal state: a shared operator predicts the one-step
+increment of the latent state and is penalised against the increment the
+encoder produces. That increment is available on every retained cycle,
+labelled or not, so the penalty stays informative at the budgets where a field
+residual goes quiet.
 
 ## Results
 
@@ -27,349 +27,246 @@ datasets (XJTU, TJU, MIT, HUST), 387 cells and 310,705 cycles.
 The proposed model is the lowest of the seven methods in all eight few-label
 settings. Under full labels it is second to the reference estimator, so the
 constraint is neutral where labels are plentiful. Every macro average above is
-recomputable from `paper_data/` alone.
+recomputable from `results/` alone.
 
 ## Method in one paragraph
 
-1. **Invariant feature map** (label-free, no fitted statistics): each row of
-   the 16 charge features is mapped to (i) row-standardized coordinates,
-   (ii) offsets from the first feature of the same row, (iii) the min-maxed
-   cycle progress, and (iv) the row mean of the raw features &mdash; the last
-   restores the common-mode aging level that channels (i)+(ii) are blind to,
-   while staying bounded for every battery. Every entry of the resulting
-   difference row lies in a fixed bounded range, which is what makes one row
-   per cycle a fair regression target.
-2. **No source-fitted scaler** (`identity` mode): a z-score fitted on a few
-   source batteries distorts unseen cells and can amplify near-constant source
-   dimensions by 1/&epsilon;.
-3. **8-dim latent state** with a sine-activated encoder, a readout, and a
-   **shared operator** `F(z_t, t) &asymp; z_{t+1} &minus; z_t`. The operator is
-   trained jointly (weight 0.5 in the small-label regime) and is the term that
-   carries the cycle-to-cycle rule.
-4. **Increment consistency loss**: the operator's predicted one-step increment
-   is penalized against the increment the encoder itself produces. Both sides
-   exist for every retained cycle pair, so the penalty does not need labels.
-5. **Prediction-side monotonicity** penalty, with per-dataset weights
-   (XJTU 0.2 / TJU 0.05 / HUST 0.2 / MIT 0.02).
+Each cycle's 16 charge features are mapped to an invariant coordinate: row
+standardisation, the min-maxed cycle progress, and the rate-normalised change
+of every feature with respect to the previous cycle, giving a 33-dimensional
+row. A sine-activated encoder `g_theta` maps that row to an 8-dimensional
+latent state `z`, and a linear readout `h_omega` maps `z` to SOH. A shared
+operator `F_psi` predicts the one-step latent increment `z_{i+1} - z_i` from
+`(z_i, t_i)`; its residual is the operator loss, weighted by `alpha`. A
+prediction-side monotonicity penalty weighted by `gamma` keeps SOH decreasing
+along each trajectory. The operator is frozen at transfer time and only the
+encoder and the readout are re-fitted on the target rows.
 
-Ablation over the eight few-label settings: removing the increment loss lifts
-macro MAPE from 1.141% to 1.479%, a 0.338-point shift exceeding the three
-representation changes combined (0.279). The full model carries 11,257
-trainable parameters against 13,662 for the reference estimator.
+# 1. System requirements
 
-## Differences from upstream PINN4SOH
+The released results were produced with Python 3.9.13 and PyTorch 2.0.1+cu118
+on a single RTX 4060 Laptop (8 GB). The code also runs on CPU and on the
+versions pinned in `requirements.txt`.
 
-The dataloader, original-model code, and evaluation conventions are inherited
-from the [PINN4SOH](https://github.com/wang-fujin/PINN4SOH) codebase
-(Nature Communications 14, 2024).  The inherited protocol is kept unchanged
-and is shared by all compared models, so model-to-model comparisons are
-internally fair, but every absolute number below is a retrospective-protocol
-result:
+| Package | Version used for the paper |
+| --- | --- |
+| python | 3.9.13 |
+| torch | 2.0.1+cu118 |
+| numpy | 1.23.5 |
+| pandas | 2.0.3 |
+| scikit-learn | 1.6.1 |
+| scipy | 1.10.1 |
+| matplotlib | >=3.5 |
+| xgboost | 1.7.6 |
+| pytest | 8.x (unit tests only) |
 
-- **Full-trajectory min--max** (inherited): each battery's features are scaled
-  by its own complete retained trajectory, including at test time.
-- **Label-dependent row filtering** (inherited): rows outside any column's
-  mean &plusmn; 3 standard deviations &mdash; including the capacity column &mdash;
-  are dropped, so test labels affect which rows are retained.
-- **Shared-cycle train/valid split** (inherited): adjacent cycle pairs are
-  built first and split randomly afterwards, so one cycle can appear in both
-  a training pair and a validation pair.
-- **Label-gap segment evaluation** (inherited): battery boundaries are
-  reconstructed from label jumps (thresholds 0.05/0.07/0.10/0.07 for
-  XJTU/TJU/HUST/MIT).  In TJU-0 and MIT these segments do not exactly match
-  physical battery IDs; archived scores are label-gap segment metrics.
+# 2. Installation guide
 
-Changes made in this fork relative to upstream:
+If you are not familiar with Python and the PyTorch framework, install Anaconda
+first and use it to configure the environment.
 
-- Battery file lists are sorted and one `nominal_capacities` indexing bug is
-  fixed.
-- `eval_metrix` is called as `(true_label, pred_label)`, matching its
-  signature; the upstream code passes them swapped (affects MAPE/MSE
-  direction).
-- Per-experiment seeding (`--seed_base`), cuDNN determinism flags in
-  `reproduce.py`, and `provenance.json` code snapshots were added.
-- The adaptive model itself (row feature map, shared degradation operator,
-  training procedure) is new; see the paper.
-
-All PINN4SOH-orig baseline numbers reported in the paper come from running
-this fork's unified pipeline on both models, not from the upstream
-repository's own artifacts.  The paper's figure pipeline ships here:
-`figures/data/make_figure_data.py` regenerates the nine tidy CSVs behind
-fig2&ndash;fig7 from `paper_data/results` (fig2/fig3 additionally need the
-downloaded datasets under `data/`; their shipped CSVs remain valid without),
-and `figures/matlab/run_all.m` renders fig2&ndash;fig7 as vector PDFs.
-
-## Repository layout
-
-```
-Model/                     LincPINN model, trainer, invariant features,
-                           original PINN (Model.py) and comparison nets (Compare_Models.py)
-dataloader/                dataset reading + per-battery min-max normalization
-main_XJTU.py etc.          original per-dataset entry points (1:1 with the PINN4SOH paper;
-                           their `--gamma`/loss defaults now match the final paper config, but the
-                           campaign is driven by scripts/reproduce.py, which sets every hyperparameter
-                           explicitly — prefer it for reproduction)
-main_adaptive_transfer.py  LEGACY train-only reference (does NOT reproduce Table 4;
-                           use scripts/transfer_eval.py for the published protocol)
-main_adaptation_fine-tuning.py  paper fine-tune driver reused by scripts/transfer_eval.py
-                           for the orig branch of Table 4
-scripts/reproduce.py       Table 2/3 suite for orig + adaptive (regular / small / ablations)
-scripts/baselines.py       external baselines: LSTM, GRU, CNN, MLP, GPR under the same protocol
-scripts/evaluate.py        battery-level MAE/MAPE/RMSE aggregation (mean +/- std over repeats)
-scripts/transfer_eval.py   Table 4 transfer suite (pretrain + freeze operator + 1-battery fine-tune;
-                           scripts/run_transfer.py is a thin wrapper around it)
-scripts/transfer_eval_ablation.py  Table 4 operator ablation (adaptive trained with alpha=0)
-scripts/attribution/                  attribution controls (target_only, source_only_eval,
-                           battery_reaggregate; see the docstrings)
-tests/                     unit tests (11) incl. anti-regression checks for the physics losses;
-                           the real-data test auto-skips without the downloaded datasets
-figures/                   paper figure pipeline: data/ (nine tidy CSVs behind fig2-fig7),
-                           matlab/ (run_all.m renders them as vector PDFs),
-                           ppt/ (Fig 1 architecture sources)
-paper_data/                seeded per-run predictions + aggregated summaries
-                           behind every table/figure (see paper_data/README.md)
-                           a4_campaign/ holds the runs the manuscript reports;
-                           results/ and evaluation/ hold an earlier replicate
-```
-
-## Installation
+## 2.1 Create environment
 
 ```bash
 conda create -n adaptive-pinn python=3.9
+```
+
+## 2.2 Activate environment
+
+```bash
 conda activate adaptive-pinn
+```
+
+## 2.3 Install dependencies
+
+```bash
 pip install -r requirements.txt
 # GPU (optional): install the CUDA 11.8 build of PyTorch 2.0.1
 ```
 
-The paper results were produced with Python 3.9.13, PyTorch 2.0.1+cu118,
-scikit-learn 1.6.1, numpy 1.23.5, pandas 2.0.3, scipy 1.10.1 on a single RTX
-4060 Laptop (8 GB).
+# 3. Demo
 
-## Data
+Every command runs from the repository root so the relative `data/...` paths
+resolve. `$PY` below is the environment's Python. There are two paths.
 
-Download the four public datasets and place them under `data/` with these
-exact folder names (one CSV per battery, as produced by the preprocessing
-library below):
+## 3.1 Path A - verify the paper numbers without training (~1 min)
 
-| Dataset | Folder | Source |
-|---|---|---|
-| XJTU | `data/XJTU data` | https://wang-fujin.github.io/ |
-| TJU  | `data/TJU data`  | https://zenodo.org/record/6405084 |
-| HUST | `data/HUST data` | https://data.mendeley.com/datasets/nsc7hnsg4s/2 |
-| MIT  | `data/MIT data`  | https://data.matr.io/1/projects/5c48dd2bc625d700019f3204 |
-
-Expected inner layout (the loaders hardcode these paths): XJTU — flat CSVs
-`<batch>_battery-N.csv` (satellite files are `Sim_satellite_battery-N.csv`);
-TJU — subfolders `Dataset_1_NCA_battery/`, `Dataset_2_NCM_battery/`,
-`Dataset_3_NCM_NCA_battery/`; MIT — dated subfolders `2017-05-12/`,
-`2017-06-30/`, `2018-04-12/`; HUST — flat CSVs `G-N.csv`. Run everything from
-the repository root so the relative `data/...` paths resolve.
-
-Protocol note: the released experiment suite ran the TJU/HUST/MIT baselines
-and adaptive models at batch size 256 (GPU-memory cap on the reference card;
-the original PINN4SOH entry points default to 512). `scripts/reproduce.py`
-sets the cap itself, and the four `main_*.py` entry points now default to 256
-to match.
-
-Charging-feature preprocessing code:
-https://github.com/wang-fujin/Battery-dataset-preprocessing-code-library
-
-The transfer baselines (Table 4, `orig` branch) additionally expect the
-source PINN checkpoints under `pretrained model/` (11 `.pth` files). Those
-are the public pre-trained models of PINN4SOH -- they were not trained by
-us and are therefore *not* redistributed here. Download that folder from
-the [PINN4SOH repository](https://github.com/wang-fujin/PINN4SOH) and place
-it at the repository root, or retrain the source models with the bundled
-`main_XJTU.py` / `main_TJU.py` / `main_HUST.py` / `main_MIT.py` entry
-points. The adaptive branch (`--model adaptive`) does not need them.
-
-Please cite the corresponding dataset publications when you use this code.
-
-## Reproducing the paper
-
-All commands run from the repository root with the environment's Python
-(`PY` below). There are two paths:
-
-**Path A — verify the paper numbers exactly (no training, ~1 min).**
-`paper_data/` ships the seeded per-run predictions and aggregated
-summaries behind every table and figure, each suite accompanied by a
-`provenance.json` code fingerprint. Recompute all metrics from that data
-alone:
+`results/` ships the seeded per-run predictions behind every table and figure:
+`pred_label.npy` and `true_label.npy` per `Experiment1..10`, seed-matched
+across models, so every paired comparison in the manuscript can be recomputed
+by reading those files directly.
 
 ```bash
-# Tables 2 and 3 (regular + small, orig & adaptive)
-$PY scripts/evaluate.py --phase all --in paper_data/results/reproduce --out evaluation
-# Table 4 (4 directed transfer pairs)
-$PY scripts/evaluate.py --phase transfer --in paper_data/results/transfer --out evaluation
-# External baselines (LSTM / GRU / CNN / MLP / GPR), regular + small
-$PY scripts/evaluate.py --phase all --in paper_data/results/baselines --out evaluation --models LSTM GRU CNN MLP GPR
-# External-baseline transfer under the same fine-tune protocol (tab7)
-$PY scripts/summarize_baseline_transfer.py --baselines-in paper_data/results/baselines \
-    --main-in paper_data/results/transfer --out evaluation/baselines
-# Ablations (tab8): HUST + XJTU-2C small-sample extension
-$PY scripts/evaluate.py --phase all --in paper_data/results/ablation/no_operator --out evaluation/ablation/no_operator
-$PY scripts/evaluate.py --phase all --in paper_data/results/ablation/no_rowmean  --out evaluation/ablation/no_rowmean
-$PY scripts/evaluate.py --phase all --in paper_data/results/ablation/no_anchored --out evaluation/ablation/no_anchored
-$PY scripts/evaluate.py --phase all --in paper_data/results/ablation/src_scaler  --out evaluation/ablation/src_scaler
-$PY scripts/evaluate.py --phase all --in paper_data/results/ablation/latent3     --out evaluation/ablation/latent3
-# Transfer-phase ablation: adaptive with the operator loss removed (tab9)
-$PY scripts/evaluate.py --phase transfer --in paper_data/results/ablation/no_operator/transfer \
-    --out evaluation/ablation/no_operator/transfer
-# Gamma sweep (tab10): four sweep variants + the collapse-curve CSV
-$PY scripts/evaluate.py --phase all --in paper_data/results/ablation/gamma1  --out evaluation/ablation/gamma1
-$PY scripts/evaluate.py --phase all --in paper_data/results/ablation/gamma2  --out evaluation/ablation/gamma2
-$PY scripts/evaluate.py --phase all --in paper_data/results/ablation/gamma5  --out evaluation/ablation/gamma5
-$PY scripts/evaluate.py --phase all --in paper_data/results/ablation/gamma10 --out evaluation/ablation/gamma10
-$PY scripts/summarize_gamma_sweep.py --eval-dir evaluation --results-root paper_data/results \
-    --main-subdir reproduce --sweep-subdir ablation --eval-ablation-subdir ablation
+# Table 2 (full-label errors) and Table 5 (seven-method comparison)
+$PY "results analysis/Regular results.py"
 
-# Attribution controls (target-only / source-only / gamma=0 / battery-subset
-# rotations) behind the paper's transfer-attribution and robustness text
-$PY scripts/attribution/source_only_eval.py   # scores the shipped src_only arrays (paper_data/results/transfer)
-# Battery-ID cross-check of the label-gap segmentation (supplementary)
-$PY scripts/attribution/battery_reaggregate.py --with-baselines \
-    --boundaries-from paper_data/evaluation/batteryid/boundaries
+# Table 3 (few-label errors), Table 6 (few-label comparison), Table 8 (ablations)
+$PY "results analysis/Small results.py"
 
-# Unit tests
-$PY tests/test_linc_pinn.py
+# Table 4 (directed transfer), Table 7 (transfer comparison), target-only control
+$PY "results analysis/Transfer results.py"
 
-# Figure data (npy/paper_data -> the nine tidy CSVs; fig2/fig3 need data/)
-$PY figures/data/make_figure_data.py
-# Figures (MATLAB; vector PDFs into figures/)
-cd figures/matlab && matlab -batch "run_all"
+# Parameter budget: 11,257 for the proposed model, 13,662 for the reference
+$PY "count parameters.py"
+
+# Corpus size: 387 cells and 310,705 cycles
+$PY "data analysis/sample count.py"
+
+# Figure data: the nine tidy CSVs behind Fig. 2-7
+$PY plotter/data/make_figure_data.py
 ```
 
-**Path B — retrain everything (days of GPU time).** Runs are resumable
-(existing `Experiment*/true_label.npy` outputs are skipped) and **seeded by
-default** (`seed_base + repeat index`, cuDNN deterministic), so a rerun on the
-same hardware/PyTorch build is bit-exact; on other hardware expect results
-within the reported std.
+The three `results analysis/*.py` scripts print the manuscript tables cell by
+cell, including the macro averages. `count parameters.py` reproduces the
+11,257 / 6,509 / 4,748 / 42% split quoted in Section 3.4, and
+`data analysis/sample count.py` reproduces the 387 cells and 310,705 cycles
+quoted in Section 3.1.
+
+## 3.2 Path B - retrain everything (days of GPU time)
+
+Runs are resumable (existing `Experiment*/true_label.npy` outputs are skipped)
+and seeded (`seed_base + repeat index`, cuDNN deterministic), so a rerun on the
+same hardware and PyTorch build is bit-exact; on other hardware expect results
+within the reported standard deviation.
 
 ```bash
-# Table 2: regular SOH estimation, both models, 10 repeats
+# Table 2: full-label SOH estimation, both models, 10 repeats
 $PY scripts/reproduce.py --phase regular --model both --repeats 10 --out results/reproduce
 
-# Table 3: small-sample (1-4 training batteries), both models, 10 repeats
+# Table 3: few-label (1-4 labelled cells), both models, 10 repeats
 $PY scripts/reproduce.py --phase small --model both --repeats 10 --out results/reproduce
 
-# Table 4: cross-dataset transfer, 10 repeats
-# (the orig branch additionally needs the PINN4SOH pre-trained weights --
-#  see "Data" above; use --model adaptive to skip them)
+# Table 4: directed transfer, six pairs, 10 repeats
 $PY scripts/transfer_eval.py --repeats 10 --out results/transfer
 
-# External baselines (LSTM / GRU / CNN / MLP / GPR), same protocol
+# External baselines (MLP, CNN, XGBoost, GRU, LSTM) under the same protocol
 $PY scripts/baselines.py --phase all --models all --repeats 10 --out results/baselines
 
-# Ablations (each n=10)
-$PY scripts/reproduce.py --phase all --model adaptive --repeats 10 --out results/ablation/no_operator --operator_weight 0.0
-$PY scripts/reproduce.py --phase small --model adaptive --datasets XJTU --repeats 10 --out results/ablation/no_rowmean --no-include_row_mean
-$PY scripts/reproduce.py --phase small --model adaptive --datasets XJTU --repeats 10 --out results/ablation/no_anchored --no-include_anchored
-$PY scripts/reproduce.py --phase small --model adaptive --datasets XJTU --repeats 10 --out results/ablation/src_scaler --feature_scaler source
-$PY scripts/reproduce.py --phase small --model adaptive --datasets XJTU --repeats 10 --out results/ablation/latent3 --latent_dim 3
+# Table 8 ablations, each 10 repeats
+$PY scripts/reproduce.py --phase small --model adaptive --repeats 10 --out results/ablation/no_operator --operator_weight 0.0
+$PY scripts/reproduce.py --phase small --model adaptive --repeats 10 --out results/ablation/no_delta      --no-temporal_delta
+$PY scripts/reproduce.py --phase small --model adaptive --repeats 10 --out results/ablation/no_z          --map_mode identity
+$PY scripts/reproduce.py --phase small --model adaptive --repeats 10 --out results/ablation/latent3       --latent_dim 3
 
-# Gamma sweep: XJTU small-sample, adaptive only, 10 repeats per gamma value
-$PY scripts/reproduce.py --phase small --model adaptive --datasets XJTU --repeats 10 --out results/ablation/gamma1  --small_gamma 1
-$PY scripts/reproduce.py --phase small --model adaptive --datasets XJTU --repeats 10 --out results/ablation/gamma2  --small_gamma 2
-$PY scripts/reproduce.py --phase small --model adaptive --datasets XJTU --repeats 10 --out results/ablation/gamma5  --small_gamma 5
-$PY scripts/reproduce.py --phase small --model adaptive --datasets XJTU --repeats 10 --out results/ablation/gamma10 --small_gamma 10
-
-# Transfer-phase ablation: adaptive with the operator loss removed (alpha = 0)
-# during source training; fine-tuning protocol unchanged
+# Transfer-phase operator ablation (alpha = 0 during source training)
 $PY scripts/transfer_eval_ablation.py --repeats 10 --out results/ablation/no_operator/transfer
 
-# Aggregate into paper tables (battery-level metrics, mean +/- std;
-# evaluation.py merges keys, so one shared --out is safe)
-$PY scripts/evaluate.py --phase all --in results/reproduce --out evaluation
-$PY scripts/evaluate.py --phase transfer --in results/transfer --out evaluation
-$PY scripts/evaluate.py --phase all --in results/baselines --out evaluation --models LSTM GRU CNN MLP GPR
-$PY scripts/evaluate.py --phase all  --in results/ablation/no_operator --out evaluation/ablation/no_operator
-$PY scripts/evaluate.py --phase small --in results/ablation/no_rowmean  --out evaluation/ablation/no_rowmean
-$PY scripts/evaluate.py --phase small --in results/ablation/no_anchored --out evaluation/ablation/no_anchored
-$PY scripts/evaluate.py --phase small --in results/ablation/src_scaler  --out evaluation/ablation/src_scaler
-$PY scripts/evaluate.py --phase small --in results/ablation/latent3     --out evaluation/ablation/latent3
-
-# Transfer-phase ablation summary
-$PY scripts/evaluate.py --phase transfer --in results/ablation/no_operator/transfer --out evaluation/ablation/no_operator/transfer
-
-# Gamma-sweep summaries + collapse curve
-$PY scripts/evaluate.py --phase all --in results/ablation/gamma1  --out evaluation/ablation/gamma1
-$PY scripts/evaluate.py --phase all --in results/ablation/gamma2  --out evaluation/ablation/gamma2
-$PY scripts/evaluate.py --phase all --in results/ablation/gamma5  --out evaluation/ablation/gamma5
-$PY scripts/evaluate.py --phase all --in results/ablation/gamma10 --out evaluation/ablation/gamma10
-$PY scripts/summarize_gamma_sweep.py --eval-dir evaluation --results-root results \
-    --main-subdir reproduce --sweep-subdir ablation --eval-ablation-subdir ablation
-
-# External-baseline transfer summary (pairs the external models with adaptive/orig)
-$PY scripts/summarize_baseline_transfer.py --baselines-in results/baselines \
-    --main-in results/transfer --out evaluation/baselines
-
-# Unit tests + figures
-$PY tests/test_linc_pinn.py
-$PY figures/data/make_figure_data.py
-cd figures/matlab && matlab -batch "run_all"
+# Unit tests (11 tests; the real-data test needs data/ and skips without it)
+$PY -m pytest tests/test_adaptive_invariant_pinn.py -q
 ```
 
-`figures/data/make_figure_data.py` reads your own rerun results when
-present (Path B outputs) and otherwise the shipped `paper_data/` mirror, so
-after Path B the figures reflect your runs, and on a fresh clone they
-reproduce the paper exactly (fig2/fig3 additionally need `data/`). Ablation-study flags: `--latent_dim`, `--include_row_mean`,
-`--include_anchored`, `--feature_scaler`, `--operator_weight`,
-`--seed_base` (seeding is on by default, set `--seed_base` to shift it).
+> As with any neural-network training, the runs are stochastic. The results
+> obtained from the commands above are therefore not expected to be identical
+> to those in our manuscript. The shipped `results/` tree is the record of the
+> runs the manuscript actually reports, and a rerun seeded on the same
+> hardware reproduces them bit-exactly.
 
-### Code fingerprint
+## 3.3 Figures
 
-Every shipped suite root in `paper_data/results/` carries a `provenance.json`
-recording the SHA256 of every `.py` file at run time, the full CLI arguments,
-and the environment (Python 3.9.13, torch 2.0.1+cu118, seeded `--seed_base 0`).
-For the five main suites the recorded fingerprint is identical, and the
-shipped code byte-matches it with the following documented exceptions:
+`plotter/data/make_figure_data.py` reads `results/` and writes the nine tidy
+CSVs that back Fig. 2-7. `plotter/matlab/run_all.m` renders them as vector
+PDFs. `plotter/ppt/` holds the editable sources of the Fig. 1 architecture
+drawing. Fig. 2 and Fig. 3 additionally need the raw cycles, which come from
+the public datasets under `data/`.
 
-- `main_adaptation - fine-tuning.py` was renamed to
-  `main_adaptation_fine-tuning.py` at release (content byte-identical).
-- `Model/adaptive_trainer.py` and `main_comparision.py` received post-campaign
-  bug fixes (a missing exception import on a never-hit path; a syntax error in
-  an upstream-inherited entry point).
-- The evaluation helpers (`scripts/evaluate.py`, `scripts/baselines.py`,
-  the summarize tools, the four `main_*.py` default values) differ from the
-  recorded bytes only in docstrings, default paths, or annotations; the
-  campaign always passed every hyperparameter explicitly (see `argv` inside
-  each `provenance.json`).
-- A handful of internal one-off tools named in the fingerprint are not
-  redistributed. Ablation variants carry per-variant fingerprints recorded at
-  the end of the campaign.
+# 4. Additional information
 
-Directory and file names were standardized for the public release after the
-campaign; paths recorded inside `provenance.json` (argv, args, and
-`code_sha256` keys) keep the campaign-time names (e.g. `results/v4_reproduce`,
-`scripts2/`) and are intentionally unmodified.
+## 4.1 Data
 
-Local absolute paths were scrubbed from the shipped logs and metadata; the
-code hashes inside `provenance.json` are untouched.
+The data in the `data` folder is preprocessed data: one CSV per cell, in the
+form the loaders expect. The four original archives are public:
 
-## License and attribution
+| Dataset | Folder | Source |
+| --- | --- | --- |
+| XJTU | `data/XJTU data` | https://wang-fujin.github.io/ |
+| TJU | `data/TJU data` | https://zenodo.org/record/6405084 |
+| HUST | `data/HUST data` | https://data.mendeley.com/datasets/nsc7hnsg4s/2 |
+| MIT | `data/MIT data` | https://data.matr.io/1/projects/5c48dd2bc625d700019f3204 |
 
-This project is released under the MIT license (see `LICENSE`) for all code
-written for this work. Parts of the data loading, the original PINN
-implementation, and the evaluation protocol are reused from
-[PINN4SOH](https://github.com/wang-fujin/PINN4SOH) (Wang et al.,
-"Physics-informed neural network for lithium-ion battery degradation stable
-modeling and prognosis", *Nature Communications* 15, 2024) for academic
-reproducibility, with attribution; the original repository ships no license
-file, so please cite the original paper if you use those components.
+Expected inner layout (the loaders hardcode these paths): XJTU - flat CSVs
+`<batch>_battery-N.csv`; TJU - subfolders `Dataset_1_NCA_battery/`,
+`Dataset_2_NCM_battery/`, `Dataset_3_NCM_NCA_battery/`; MIT - dated subfolders
+`2017-05-12/`, `2017-06-30/`, `2018-04-12/`; HUST - flat CSVs `G-N.csv`.
 
-## Citation
+The code for **reading and preprocessing** the dataset is publicly available at
+https://github.com/wang-fujin/Battery-dataset-preprocessing-code-library
 
-A machine-readable `CITATION.cff` is included (fill in the author list upon
-acceptance).
+Please cite the corresponding dataset publications when you use this data.
+
+## 4.2 Repository layout
+
+```
+Model/                     proposed model, trainer, invariant feature map,
+                           original PINN (Model.py) and comparison nets (Compare_Models.py)
+dataloader/                dataset reading, per-battery min-max, split logic
+main_XJTU.py etc.          per-dataset entry points (1:1 with the PINN4SOH paper;
+                           their defaults now match the final paper configuration)
+main_adaptive_transfer.py  transfer entry point (pretrain + freeze operator + fine-tune)
+main_adaptation_fine-tuning.py  fine-tune driver for the reference estimator
+scripts/reproduce.py       Table 2/3 suite for both models (regular / small)
+scripts/baselines.py       external baselines under the same protocol
+scripts/evaluate.py        battery-level MAE/MAPE/RMSE aggregation (mean +- std)
+scripts/transfer_eval.py   Table 4 transfer suite
+scripts/transfer_eval_ablation.py  transfer-phase operator ablation
+scripts/attribution/       attribution controls (target-only, source-only, battery re-aggregation)
+results analysis/          print Table 2-8 from the shipped predictions
+data analysis/             corpus size (cells, cycles)
+count parameters.py        parameter budget of both models
+results/                   seeded per-run predictions behind every table and figure
+data/                      preprocessed datasets (387 cells, 310,705 cycles)
+plotter/                   figure pipeline: data/ CSVs, matlab/ scripts, ppt/ Fig. 1 sources
+tests/                     11 unit tests incl. anti-regression checks for the physics losses
+```
+
+## 4.3 Protocol notes
+
+The released suite ran the TJU/HUST/MIT baselines and the proposed model at
+batch size 256 (a GPU-memory cap on the reference card; the upstream PINN4SOH
+entry points default to 512). `scripts/reproduce.py` sets the cap itself, and
+the four `main_*.py` entry points default to 256 to match.
+
+The five external regressors use a per-battery chronological 80/20 split, while
+the two physics-informed estimators use a pooled random split. This asymmetry
+is disclosed in the Limitations of the manuscript.
+
+## 4.4 Differences from upstream PINN4SOH
+
+The data loading, the reference PINN implementation and the evaluation protocol
+are reused from [PINN4SOH](https://github.com/wang-fujin/PINN4SOH) for academic
+reproducibility, with attribution. The contributions of this work are the
+invariant feature map (row standardisation plus the rate-normalised change
+block), the shared latent-increment operator and its loss, the transfer
+protocol that freezes the operator, and the few-label evaluation.
+
+# 5. Citation
+
+If you find it useful, please cite our paper (and the PINN4SOH paper whose
+protocol and datasets this work builds on):
 
 ```bibtex
-@article{adaptiveinvariantpinn2026,
-  title  = {LincPINN: invariant physics-informed learning for
-            battery state-of-health estimation under small-sample and
-            cross-dataset regimes},
-  author = {[authors]},
-  journal= {Journal of Energy Storage},
-  year   = {2026},
-  note   = {[to be updated upon acceptance]}
+@article{du2026latentincrement,
+  title   = {Latent-increment physics-informed network for lithium-ion battery
+             state of health estimation under label scarcity},
+  author  = {Du, Changrong and Shi, Yanchao and Guo, Jun and Lai, Jing},
+  journal = {Journal of Energy Storage},
+  year    = {2026},
+  note    = {to be updated upon acceptance}
+}
+
+@article{wang2024physics,
+  title   = {Physics-informed neural network for lithium-ion battery degradation
+             stable modeling and prognosis},
+  author  = {Wang, Fujin and others},
+  journal = {Nature Communications},
+  volume  = {15},
+  number  = {1},
+  pages   = {4332},
+  year    = {2024}
 }
 ```
+
+## License
+
+MIT for all code written for this work (see `LICENSE`). The upstream PINN4SOH
+repository ships no license file; please cite the original paper if you use
+those components.

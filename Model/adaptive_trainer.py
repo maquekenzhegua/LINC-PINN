@@ -10,8 +10,8 @@ import numpy as np
 import torch
 from torch import Tensor
 
-from Model.linc_pinn import (
-    LincPINN,
+from Model.AdaptiveInvariantPINN import (
+    AdaptiveInvariantPINN,
     AdaptivePINNConfig,
     BatchLoader,
     EmptyBatchLoaderError,
@@ -149,7 +149,7 @@ class AdaptivePINNTrainer:
 
     def __init__(
         self,
-        model: LincPINN,
+        model: AdaptiveInvariantPINN,
         runtime: AdaptiveRuntimeConfig,
     ) -> None:
         self.model = model
@@ -171,6 +171,8 @@ class AdaptivePINNTrainer:
             feature_scaler=getattr(args, "feature_scaler", "identity"),
             include_row_mean=getattr(args, "include_row_mean", True),
             include_anchored=getattr(args, "include_anchored", True),
+            map_mode=getattr(args, "map_mode", "invariant"),
+            temporal_delta=getattr(args, "temporal_delta", False),
             epsilon=args.invariant_epsilon,
             base_lr=args.lr,
             final_lr=args.final_lr,
@@ -183,7 +185,7 @@ class AdaptivePINNTrainer:
             log_dir=args.log_dir,
         )
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        return cls(LincPINN(model_config, device), runtime)
+        return cls(AdaptiveInvariantPINN(model_config, device), runtime)
 
     @torch.no_grad()
     def Test(self, loader: BatchLoader) -> Tuple[np.ndarray, np.ndarray]:

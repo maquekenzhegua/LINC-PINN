@@ -4,13 +4,13 @@ from __future__ import annotations
 LEGACY train-only entry point: kept for reference; the published Table 4
 protocol (freeze operator + 1-battery fine-tune) lives in
 scripts/transfer_eval.py -- this script does NOT reproduce it.
-Single-source, unseen-target evaluation for LincPINN."""
+Single-source, unseen-target evaluation for the adaptive invariant PINN."""
 
 import argparse
 from pathlib import Path
 from typing import Callable, Dict, Mapping, NamedTuple, Optional, Protocol
 
-from Model.linc_pinn import BatchLoader
+from Model.AdaptiveInvariantPINN import BatchLoader
 from Model.adaptive_trainer import AdaptivePINNTrainer
 
 
@@ -93,7 +93,7 @@ DOMAIN_LOADERS: Dict[str, DomainLoader] = {
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser("LincPINN cross-domain transfer")
+    parser = argparse.ArgumentParser("AdaptiveInvariantPINN cross-domain transfer")
     parser.add_argument("--source_data", choices=DATASETS, default="XJTU")
     parser.add_argument("--target_data", choices=DATASETS, default="HUST")
     parser.add_argument("--source_batch", type=int, default=0)
@@ -107,10 +107,13 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--lr", type=float, default=1e-2)
     parser.add_argument("--final_lr", type=float, default=2e-4)
     parser.add_argument("--lr_F", type=float, default=1e-3)
-    parser.add_argument("--input_dim", type=int, default=17)
+    parser.add_argument("--input_dim", type=int, default=33)
     parser.add_argument("--latent_dim", type=int, default=8)
     parser.add_argument("--feature_scaler", choices=("source", "identity"), default="identity")
-    parser.add_argument("--include_row_mean", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument("--include_row_mean", action=argparse.BooleanOptionalAction, default=False)
+    parser.add_argument("--include_anchored", action=argparse.BooleanOptionalAction, default=False)
+    parser.add_argument("--map_mode", choices=("invariant", "identity"), default="invariant")
+    parser.add_argument("--temporal_delta", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--u_hidden_dim", type=int, default=60)
     parser.add_argument("--F_layers_num", type=int, default=3)
     parser.add_argument("--F_hidden_dim", type=int, default=60)
@@ -127,7 +130,7 @@ def main() -> None:
     source = DOMAIN_LOADERS[args.source_data](args, args.source_batch)
     target = DOMAIN_LOADERS[args.target_data](args, args.target_batch)
     if args.save_folder is None:
-        result_root = Path("results") / "LincPINN" / "transfer"
+        result_root = Path("results") / "AdaptiveInvariantPINN" / "transfer"
         args.save_folder = str(result_root / f"{args.source_data}-to-{args.target_data}")
     trainer = AdaptivePINNTrainer.from_args(args)
     trainer.Train(source.train, validloader=source.valid, testloader=target.test)
