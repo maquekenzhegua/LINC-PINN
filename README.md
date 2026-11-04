@@ -1,9 +1,12 @@
-# AdaptiveInvariantPINN
+# LINC-PINN
 
-Reference implementation of the **latent-increment physics-informed network**
-for lithium-ion battery **state-of-health (SOH) estimation** under **label
-scarcity**. This repository is the official code and data release for our
-submission to *Journal of Energy Storage* (Elsevier).
+Reference implementation of the **latent-increment physics-informed network
+(LINC-PINN)** for lithium-ion battery **state-of-health (SOH) estimation**
+under **label scarcity**. The implementation names the model class
+`AdaptiveInvariantPINN`; `LINC-PINN` is the name used in the manuscript.
+
+This repository is the official code and data release for our submission to
+*Journal of Energy Storage* (Elsevier).
 
 The constraint that physics-informed estimators usually write on the predicted
 SOH field needs a derivative that a single record per cycle cannot supply. This
