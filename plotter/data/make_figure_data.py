@@ -25,6 +25,9 @@ RAWDATA = PAPER / "data"                         # public datasets (user downloa
 
 GAPS = {"XJTU": 0.05, "TJU": 0.07, "HUST": 0.10, "MIT": 0.07}
 
+# results/ names the arm XGBOOST; the manuscript calls it XGBoost everywhere.
+MODEL_LABELS = {"XGBOOST": "XGBoost"}
+
 FEATURES = [
     "v.mean", "v.std", "v.kurt", "v.skew",
     "CC Q", "CC t", "v.slope", "v.ent",
@@ -92,7 +95,8 @@ def metrics_frame(base: Path) -> pd.DataFrame:
         if not (t.exists() and p.exists()):
             continue
         mae, mape, rmse = battery_metrics(np.load(t), np.load(p), gap_for_case(case))
-        rows.append({"model": model, "case": case, "exp": int(exp.name.replace("Experiment", "")),
+        rows.append({"model": MODEL_LABELS.get(model, model), "case": case,
+                     "exp": int(exp.name.replace("Experiment", "")),
                      "MAE": mae, "MAPE": mape, "RMSE": rmse})
     return pd.DataFrame(rows)
 
@@ -129,7 +133,7 @@ def main() -> None:
     pd.concat(scat).to_csv(HERE / "fig4_scatter.csv", index=False)
     print(f"fig4_scatter.csv         {sum(len(s) for s in scat):5d} rows")
 
-    # ---- Fig 5: small sample (adaptive/orig + GPR/GRU/LSTM/CNN/MLP) -----
+    # ---- Fig 5: small sample (adaptive/orig + the five external regressors)
     frames = [export_metrics(RESULTS / "reproduce" / "small", "fig5_small.csv")]
     frames.append(metrics_frame(RESULTS / "baselines" / "small"))
     df = pd.concat(frames)
@@ -144,45 +148,48 @@ def main() -> None:
     df.to_csv(HERE / "fig6_transfer.csv", index=False)
     print(f"fig6_transfer.csv updated {len(df):5d} rows")
 
-    # ---- Fig 7a: ablation variants --------------------------------------
+    # ---- Fig 7a: ablation variants (the four arms shipped in results/) ----
+    # results/ablation holds no_operator, no_delta, no_z and latent3, each on
+    # the eight few-label settings.  Anything else would be a figure the paper
+    # does not report, so the list is fixed to these four.
     frames = []
-    for variant in ["no_operator", "latent3", "no_rowmean", "no_anchored", "src_scaler"]:
-        root = RESULTS / "ablation" / variant
-        for phase in ["regular", "small"]:
-            frames.append(metrics_frame(root / phase).assign(variant=variant, phase=phase))
-    full_reg = metrics_frame(RESULTS / "reproduce" / "regular")
-    full_reg = full_reg[full_reg["model"].eq("adaptive") & full_reg["case"].isin(["XJTU-2C"])].assign(variant="full", phase="regular")
+    for variant in ["no_operator", "no_delta", "no_z", "latent3"]:
+        root = RESULTS / "ablation" / variant / "small"
+        frames.append(metrics_frame(root).assign(variant=variant, phase="small"))
     full_sml = metrics_frame(RESULTS / "reproduce" / "small")
-    full_sml = full_sml[full_sml["model"].eq("adaptive") & full_sml["case"].isin(["small-HUST-n1", "small-XJTU-2C-n1"])].assign(variant="full", phase="small")
-    orig_reg = metrics_frame(RESULTS / "reproduce" / "regular")
-    orig_reg = orig_reg[orig_reg["model"].eq("orig") & orig_reg["case"].isin(["XJTU-2C"])]
-    orig_reg = orig_reg.assign(variant="orig", phase="regular")
+    full_sml = full_sml[full_sml["model"].eq("adaptive")].assign(variant="full", phase="small")
     orig_sml = metrics_frame(RESULTS / "reproduce" / "small")
-    orig_sml = orig_sml[orig_sml["model"].eq("orig") & orig_sml["case"].isin(["small-HUST-n1", "small-XJTU-2C-n1"])]
-    orig_sml = orig_sml.assign(variant="orig", phase="small")
-    df = pd.concat(frames + [full_reg, full_sml, orig_reg, orig_sml])
+    orig_sml = orig_sml[orig_sml["model"].eq("orig")].assign(variant="orig", phase="small")
+    df = pd.concat(frames + [full_sml, orig_sml])
     df.to_csv(HERE / "fig7_ablation.csv", index=False)
     print(f"fig7_ablation.csv        {len(df):5d} rows")
 
     # ---- Fig 7b: gamma sweep on XJTU-2C small n=1..4 --------------------
+    # Only the shipped gamma = 0.2 arm is archived in results/.  The 1/2/5/10
+    # arms were produced by the tuning campaign and are not part of the
+    # release, so the shipped fig7_gamma.csv is kept rather than overwritten
+    # with a single-arm file.
     rows = []
-    gamma_paths = {0.2: RESULTS / "reproduce" / "small" / "adaptive"}
-    for g in (1, 2, 5, 10):
-        gamma_paths[g] = RESULTS / "ablation" / f"gamma{g}" / "small" / "adaptive"
-    for gamma, root in gamma_paths.items():
-        for n in (1, 2, 3, 4):
-            cell = root / f"small-XJTU-2C-n{n}"
-            for exp in sorted(cell.glob("Experiment*")):
-                t, p = exp / "true_label.npy", exp / "pred_label.npy"
-                if not (t.exists() and p.exists()):
-                    continue
-                tv, pv = np.load(t).reshape(-1), np.load(p).reshape(-1)
-                _mae, mape, _rmse = battery_metrics(tv, pv, GAPS["XJTU"])
-                rows.append({"gamma": gamma, "n": n, "exp": int(exp.name.replace("Experiment", "")),
-                             "MAPE": mape, "pred_range": float(pv.max() - pv.min()),
-                             "true_range": float(tv.max() - tv.min())})
-    pd.DataFrame(rows).to_csv(HERE / "fig7_gamma.csv", index=False)
-    print(f"fig7_gamma.csv           {len(rows):5d} rows")
+    if any((RESULTS / "ablation" / f"gamma{g}").exists() for g in (1, 2, 5, 10)):
+        gamma_paths = {0.2: RESULTS / "reproduce" / "small" / "adaptive"}
+        for g in (1, 2, 5, 10):
+            gamma_paths[g] = RESULTS / "ablation" / f"gamma{g}" / "small" / "adaptive"
+        for gamma, root in gamma_paths.items():
+            for n in (1, 2, 3, 4):
+                cell = root / f"small-XJTU-2C-n{n}"
+                for exp in sorted(cell.glob("Experiment*")):
+                    t, p = exp / "true_label.npy", exp / "pred_label.npy"
+                    if not (t.exists() and p.exists()):
+                        continue
+                    tv, pv = np.load(t).reshape(-1), np.load(p).reshape(-1)
+                    _mae, mape, _rmse = battery_metrics(tv, pv, GAPS["XJTU"])
+                    rows.append({"gamma": gamma, "n": n, "exp": int(exp.name.replace("Experiment", "")),
+                                 "MAPE": mape, "pred_range": float(pv.max() - pv.min()),
+                                 "true_range": float(tv.max() - tv.min())})
+        pd.DataFrame(rows).to_csv(HERE / "fig7_gamma.csv", index=False)
+        print(f"fig7_gamma.csv           {len(rows):5d} rows")
+    else:
+        print("fig7_gamma.csv           kept as shipped (gamma arms are not in results/)")
 
     # Fig 2/3 read the raw public datasets; without data/ on disk the
     # shipped CSVs stay untouched and only the npy-based figures regenerate.

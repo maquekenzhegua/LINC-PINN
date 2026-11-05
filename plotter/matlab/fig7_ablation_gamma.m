@@ -8,41 +8,35 @@ tl = tiledlayout(h, 1, 2, 'TileSpacing', 'compact', 'Padding', 'compact');
 % ---------------- (a) ablation bars ----------------
 ax = nexttile(tl); hold(ax, 'on');
 A = readtable(fullfile('..','data','fig7_ablation.csv'), 'TextType', 'string', 'VariableNamingRule', 'preserve');
-configs = ["full","no_operator","src_scaler","latent3","no_rowmean","no_anchored"];
-clabels = {'Full', 'w/o operator', 'src. scaler', 'latent 8\rightarrow3', ...
-           'w/o row-mean', 'w/o anchored'};
+configs = ["full","no_operator","no_delta","no_z","latent3"];
+clabels = {'Full', 'w/o operator loss', 'w/o \Delta between cycles', ...
+           'w/o row standardisation', 'latent 8\rightarrow3'};
 cases = ["small-HUST-n1", "small-XJTU-2C-n1"];
 casecols = [C.batches(1, :); C.batches(4, :)];
 
 w = 0.36;
 bar_handles = gobjects(1, 2);
 for ci = 1:2
-    mu = nan(1, 6); sd = nan(1, 6);
-    for k = 1:6
-        if configs(k) == "full"
-            x = A.MAPE(A.variant == "full" & A.model == "adaptive" & A.("case") == cases{ci}) * 100;
-        elseif configs(k) == "src_scaler"
-            x = A.MAPE(A.variant == "src_scaler" & A.("case") == cases{ci}) * 100;
-        else
-            x = A.MAPE(A.variant == configs(k) & A.("case") == cases{ci}) * 100;
-        end
+    mu = nan(1, 5); sd = nan(1, 5);
+    for k = 1:5
+        x = A.MAPE(A.variant == configs(k) & A.("case") == cases{ci}) * 100;
         mu(k) = mean(x); sd(k) = std(x);
     end
-    bar_handles(ci) = bar(ax, (1:6) + (ci - 1.5) * w, mu, w * 0.85, 'FaceColor', casecols(ci, :), ...
+    bar_handles(ci) = bar(ax, (1:5) + (ci - 1.5) * w, mu, w * 0.85, 'FaceColor', casecols(ci, :), ...
         'EdgeColor', 'k', 'LineWidth', 0.4);
-    errorbar(ax, (1:6) + (ci - 1.5) * w, mu, sd, 'LineStyle', 'none', ...
+    errorbar(ax, (1:5) + (ci - 1.5) * w, mu, sd, 'LineStyle', 'none', ...
         'Color', 'k', 'LineWidth', 0.6, 'CapSize', 2);
     % PINN4SOH reference line
     o = A.MAPE(A.variant == "orig" & A.("case") == cases{ci}) * 100;
     yref = mean(o);
-    plot(ax, [0.35, 6.65], [yref, yref], '--', 'Color', casecols(ci, :), 'LineWidth', 0.9);
+    plot(ax, [0.35, 5.65], [yref, yref], '--', 'Color', casecols(ci, :), 'LineWidth', 0.9);
     text(ax, 0.42, yref, sprintf('PINN4SOH %.1f%% ', yref), 'FontSize', 6.8, ...
         'Color', casecols(ci, :), 'HorizontalAlignment', 'left', ...
         'VerticalAlignment', 'bottom', 'FontName', 'Arial');
 end
 ylim(ax, [0, 5.9]);
-xlim(ax, [0.35, 6.65]);
-xticks(ax, 1:6); xticklabels(ax, clabels);
+xlim(ax, [0.35, 5.65]);
+xticks(ax, 1:5); xticklabels(ax, clabels);
 ax.XAxis.FontSize = 6.8;
 ylabel(ax, 'MAPE at n=1 (%)');
 set(ax, 'FontSize', 6.5);

@@ -2,7 +2,7 @@ function c = ctab(name)
 %CTAB Okabe-Ito derived publication palette (struct of RGB rows).
 c.adaptive = [0.835 0.369 0.000];   % vermilion  (ours)
 c.orig     = [0.360 0.360 0.360];   % dark gray
-c.GPR      = [0.000 0.620 0.451];   % bluish green
+c.XGBoost  = [0.000 0.620 0.451];   % bluish green
 c.GRU      = [0.800 0.475 0.655];   % reddish purple
 c.LSTM     = [0.906 0.624 0.000];   % orange
 c.CNN      = [0.337 0.706 0.914];   % sky blue

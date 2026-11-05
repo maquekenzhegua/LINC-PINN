@@ -5,8 +5,8 @@ h = figstyle(190, 62);
 tl = tiledlayout(h, 1, 2, 'TileSpacing', 'compact', 'Padding', 'compact');
 
 V = readtable(fullfile('..','data','fig5_small.csv'), 'TextType', 'string', 'VariableNamingRule', 'preserve');
-models = ["adaptive","orig","GPR","GRU","LSTM","CNN","MLP"];
-mnames = {'Adaptive (ours)', 'PINN4SOH', 'GPR', 'GRU', 'LSTM', 'CNN', 'MLP'};
+models = ["adaptive","orig","XGBoost","GRU","LSTM","CNN","MLP"];
+mnames = {'Adaptive (ours)', 'PINN4SOH', 'XGBoost', 'GRU', 'LSTM', 'CNN', 'MLP'};
 mk = {'o', 's', '^', 'v', 'd', '<', '>'};
 dss = ["XJTU-2C", "HUST"];
 dtitles = {'XJTU-2C', 'HUST'};
@@ -35,10 +35,10 @@ for p = 1:2
     if p == 1
         ylim(ax, [0, 5.6]);
     else
-        % headroom for the PINN4SOH n=1 error bar (5.09 +/- 1.64); the CNN
-        % n=1 mean (9.24) stays off-scale and is annotated instead
+        % headroom for the PINN4SOH n=1 error bar (4.73 +/- 1.05); the CNN
+        % n=1 mean (14.75) stays off-scale and is annotated instead
         ylim(ax, [0, 7.2]);
-        text(ax, 1.12, 6.85, 'CNN: 9.2%', 'FontSize', 6.8, ...
+        text(ax, 1.12, 6.85, 'CNN: 14.7%', 'FontSize', 6.8, ...
             'Color', [0.2 0.2 0.2], 'FontName', 'Arial');
     end
     xlim(ax, [0.6, 4.4]);

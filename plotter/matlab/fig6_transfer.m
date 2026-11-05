@@ -6,13 +6,11 @@ h = figstyle(190, 66);
 V = readtable(fullfile('..','data','fig6_transfer.csv'), 'TextType', 'string', 'VariableNamingRule', 'preserve');
 pairs = ["XJTU-2C-to-HUST", "HUST-to-XJTU-2C", "XJTU-2C-to-TJU-0", "TJU-0-to-XJTU-2C"];
 plabels = {'XJTU\rightarrowHUST', 'HUST\rightarrowXJTU', 'XJTU\rightarrowTJU', 'TJU\rightarrowXJTU'};
-models = ["adaptive","orig","GPR","GRU","LSTM","CNN","MLP"];
-mnames = {'Adaptive (ours)', 'PINN4SOH', 'GPR', 'GRU', 'LSTM', 'CNN', 'MLP'};
+models = ["adaptive","orig","XGBoost","GRU","LSTM","CNN","MLP"];
+mnames = {'Adaptive (ours)', 'PINN4SOH', 'XGBoost', 'GRU', 'LSTM', 'CNN', 'MLP'};
 
 ax = axes(h); hold(ax, 'on');
 w = 0.115;
-hb = gobjects(7, 1);
-ymax_all = 0;
 hb = gobjects(7, 1);
 ymax_all = 0;
 offs = (-3:3)' * w;
