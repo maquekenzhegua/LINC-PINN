@@ -6,11 +6,13 @@ Baselines
 - LSTM, GRU: 2-layer recurrent nets reading the 17 input coordinates as a
   length-17 sequence (hidden 32, inter-layer dropout 0.2), head Dropout(0.2)
   + Linear(32, 1) - same capacity scale as the original comparators.
-- GPR      : sklearn GaussianProcessRegressor, Constant*RBF + White kernel on
-  the 17-dim feature vector, y normalized, hyperparameters by marginal
-  likelihood (2 restarts).  Training rows are subsampled to ``--gpr_max_rows``
-  when the train set is larger (seeded); no early stopping is possible, so the
-  full training set (up to the cap) is used.
+- XGBoost  : xgboost.XGBRegressor on the flat 17-dim row, the same input
+  contract as the 2026-10-08 study.  Each training battery is split
+  chronologically 80/20 into train and validation and the test cells are held
+  out whole.  ``max_depth`` in {2,3,4} x ``learning_rate`` in {0.03,0.07} are
+  selected on validation MSE with early stopping, after which the selected
+  number of boosting rounds is refit on the full training block.  In transfer
+  mode the source booster is continued on the target calibration battery.
 
 Protocol (identical to scripts/reproduce.py)
 --------------------------------------------
@@ -22,7 +24,13 @@ best-validation checkpoint's test predictions saved as
 ``true_label.npy`` / ``pred_label.npy`` so scripts/evaluate.py can
 aggregate battery-level MAPE/RMSE exactly like for orig/adaptive.
 
-Usage (from PINN4SOH-main/):
+The XGBoost arm keeps the same battery split and the same target-row
+convention but trains on a per-battery chronological 80/20 inner split with
+its own early stopping, because a gradient-boosted tree ensemble has no epoch
+schedule to share.  This is the protocol behind the shipped
+``results/baselines`` XGBOOST tree; see Section 4.3 of the README.
+
+Usage (from the repository root, so the relative data/ paths resolve):
     python scripts/baselines.py --phase small --models all --repeats 10 --out results/baselines
     python scripts/baselines.py --phase regular --models all --repeats 10 --out results/baselines
 """
@@ -30,6 +38,7 @@ Usage (from PINN4SOH-main/):
 from __future__ import annotations
 
 import argparse
+import itertools
 import random
 import sys
 import time
@@ -48,7 +57,7 @@ from reproduce import make_loaders_for_phase, make_loaders_for_small  # noqa: E4
 
 XJTU_BATCHES = ["2C", "3C", "R2.5", "R3", "RW", "satellite"]
 TJU_BATCHES = [0, 1, 2]
-MODEL_NAMES = ["LSTM", "GRU", "CNN", "MLP", "GPR"]
+MODEL_NAMES = ["LSTM", "GRU", "CNN", "MLP", "XGBOOST"]
 
 GAP_BY_PREFIX = {"XJTU": 0.05, "TJU": 0.07, "HUST": 0.10, "MIT": 0.07}
 
@@ -204,83 +213,238 @@ def run_torch_baseline(name: str, loaders: Dict[str, object], save_dir: Path,
 
 
 # ---------------------------------------------------------------------------
-# GPR baseline
+# XGBoost baseline (flat 17-dim row, no sequence window)
 # ---------------------------------------------------------------------------
 
-def _collect_xy(loader) -> Tuple[np.ndarray, np.ndarray]:
-    xs, ys = [], []
-    for x1, _x2, y1, _y2 in loader:
-        xs.append(x1.numpy())
-        ys.append(y1.numpy().reshape(-1))
-    return np.concatenate(xs), np.concatenate(ys)
+XGB_FEATURE_COUNT = 17
+XGB_TRAIN_FRACTION = 0.8
+XGB_HUST_TEST_IDS = {
+    "1-4", "1-8", "2-4", "2-8", "3-4", "3-8", "4-4", "4-8",
+    "5-4", "5-7", "6-4", "6-8", "7-4", "7-8", "8-4", "8-8",
+    "9-4", "9-8", "10-4", "10-8",
+}
 
 
-def run_gpr(loaders: Dict[str, object], save_dir: Path, seed: int,
-            max_rows: int = 6000) -> str:
-    from sklearn.gaussian_process import GaussianProcessRegressor
-    from sklearn.gaussian_process.kernels import ConstantKernel as C
-    from sklearn.gaussian_process.kernels import RBF, WhiteKernel
+def _xgb_reader(dataset: str, batch):
+    """Repository reader, so preprocessing matches the PINN exactly."""
+    import argparse as _argparse
 
-    x_train, y_train = _collect_xy(loaders["train"])
-    note = f"train_rows={len(y_train)}"
-    if len(y_train) > max_rows:
-        rng = np.random.RandomState(seed)
-        idx = rng.choice(len(y_train), size=max_rows, replace=False)
-        x_train, y_train = x_train[idx], y_train[idx]
-        note += f" (subsampled to {max_rows})"
-    kernel = C(1.0, (1e-3, 1e3)) * RBF(1.0, (1e-2, 1e2)) + WhiteKernel(
-        noise_level=1e-2, noise_level_bounds=(1e-6, 1e-1)
+    from dataloader.dataloader import HUSTdata, MITdata, TJUdata, XJTUdata
+
+    stub = _argparse.Namespace(
+        normalization_method="min-max", batch_size=256, log_dir=None, save_folder=None,
     )
-    gpr = GaussianProcessRegressor(
-        kernel=kernel, normalize_y=True, n_restarts_optimizer=2, random_state=seed,
+    data_root = PROJECT_ROOT / "data"
+    if dataset == "XJTU":
+        return XJTUdata(root=str(data_root / "XJTU data"), args=stub)
+    if dataset == "TJU":
+        reader = TJUdata(root=str(data_root / "TJU data"), args=stub)
+        reader.nominal_capacity = reader.nominal_capacities[int(batch)]
+        return reader
+    if dataset == "HUST":
+        return HUSTdata(root=str(data_root / "HUST data"), args=stub)
+    if dataset == "MIT":
+        return MITdata(root=str(data_root / "MIT data"), args=stub)
+    raise ValueError("Unsupported dataset: {!r}".format(dataset))
+
+
+def _xgb_battery_paths(dataset: str, batch) -> Tuple[List[Path], List[Path]]:
+    """Battery-level train/test assignment, identical to make_loaders_for_phase."""
+    data_root = PROJECT_ROOT / "data"
+    train_paths: List[Path] = []
+    test_paths: List[Path] = []
+    if dataset == "XJTU":
+        root = data_root / "XJTU data"
+        for filename in sorted(p.name for p in root.iterdir() if p.is_file()):
+            if str(batch) not in filename:
+                continue
+            path = root / filename
+            # mirrors the original protocol's filename rule
+            if "4" in filename or "8" in filename:
+                test_paths.append(path)
+            else:
+                train_paths.append(path)
+        return train_paths, test_paths
+    if dataset == "TJU":
+        root = data_root / "TJU data"
+        batch_root = sorted(p for p in root.iterdir() if p.is_dir())[int(batch)]
+        holdout_a, holdout_b = [(5, 9), (4, 8), (5, 9)][int(batch)]
+        files = sorted(p for p in batch_root.iterdir() if p.is_file())
+        for index, path in enumerate(files, start=1):
+            if index % 10 in (holdout_a, holdout_b):
+                test_paths.append(path)
+            else:
+                train_paths.append(path)
+        return train_paths, test_paths
+    if dataset == "HUST":
+        root = data_root / "HUST data"
+        for path in sorted(p for p in root.iterdir() if p.is_file()):
+            if path.stem in XGB_HUST_TEST_IDS:
+                test_paths.append(path)
+            else:
+                train_paths.append(path)
+        return train_paths, test_paths
+    if dataset == "MIT":
+        root = data_root / "MIT data"
+        for batch_name in ["2017-05-12", "2017-06-30", "2018-04-12"]:
+            for path in sorted(p for p in (root / batch_name).iterdir() if p.is_file()):
+                if int(path.stem.split("-")[-1]) % 5 == 0:
+                    test_paths.append(path)
+                else:
+                    train_paths.append(path)
+        return train_paths, test_paths
+    raise ValueError("Unsupported dataset: {!r}".format(dataset))
+
+
+def _xgb_load_series(path: Path, reader):
+    """One battery as (features, target); the final retained row has no partner."""
+    frame = reader.read_one_csv(str(path), reader.nominal_capacity)
+    if frame.shape[1] != XGB_FEATURE_COUNT + 1:
+        raise ValueError(
+            "Expected {} features plus one target in {}, got {} columns".format(
+                XGB_FEATURE_COUNT, path, frame.shape[1]
+            )
+        )
+    features = frame.iloc[:-1, :-1].to_numpy(dtype=np.float32, copy=True)
+    target = frame.iloc[:-1, -1].to_numpy(dtype=np.float32, copy=True)
+    if not np.isfinite(features).all() or not np.isfinite(target).all():
+        raise ValueError("Non-finite values remain after preprocessing for {}".format(path))
+    return features, target
+
+
+def _xgb_split(dataset: str, batch, train_paths, test_paths,
+               train_fraction: float = XGB_TRAIN_FRACTION):
+    """Per-battery chronological 80/20 inner split, whole test cells held out."""
+    reader = _xgb_reader(dataset, batch)
+    train_x, train_y, valid_x, valid_y, test_x, test_y = [], [], [], [], [], []
+    for path in train_paths:
+        features, target = _xgb_load_series(path, reader)
+        count = len(target)
+        split_index = int(np.floor(count * train_fraction))
+        if count >= 2:
+            split_index = min(max(split_index, 1), count - 1)
+        else:
+            split_index = count
+        if split_index > 0:
+            train_x.append(features[:split_index])
+            train_y.append(target[:split_index])
+        if split_index < count:
+            valid_x.append(features[split_index:])
+            valid_y.append(target[split_index:])
+    for path in test_paths:
+        features, target = _xgb_load_series(path, reader)
+        test_x.append(features)
+        test_y.append(target)
+    if not train_x or not valid_x or not test_x:
+        raise ValueError("No usable rows for {}-{}".format(dataset, batch))
+    return (
+        np.concatenate(train_x), np.concatenate(train_y),
+        np.concatenate(valid_x), np.concatenate(valid_y),
+        np.concatenate(test_x), np.concatenate(test_y),
     )
-    gpr.fit(x_train, y_train)
-    x_test, y_test = _collect_xy(loaders["test"])
-    pred = gpr.predict(x_test).reshape(-1, 1)
-    np.save(save_dir / "true_label.npy", y_test.reshape(-1))
-    np.save(save_dir / "pred_label.npy", pred)
-    return note
 
 
-def _make_gpr(seed: int):
-    from sklearn.gaussian_process import GaussianProcessRegressor
-    from sklearn.gaussian_process.kernels import ConstantKernel as C
-    from sklearn.gaussian_process.kernels import RBF, WhiteKernel
+def _make_xgb(params: dict, n_estimators: int, seed: int, early_stop=None):
+    from xgboost import XGBRegressor
 
-    kernel = C(1.0, (1e-3, 1e3)) * RBF(1.0, (1e-2, 1e2)) + WhiteKernel(
-        noise_level=1e-2, noise_level_bounds=(1e-6, 1e-1)
+    model_params = dict(params)
+    model_params.update(
+        objective="reg:squarederror", eval_metric="rmse", tree_method="hist",
+        device="cpu", n_estimators=int(n_estimators), random_state=int(seed),
+        n_jobs=4, verbosity=0,
     )
-    return GaussianProcessRegressor(
-        kernel=kernel, normalize_y=True, n_restarts_optimizer=2, random_state=seed,
+    if early_stop is not None:
+        model_params["early_stopping_rounds"] = int(early_stop)
+    return XGBRegressor(**model_params)
+
+
+def _select_xgb(train_x, train_y, valid_x, valid_y, seed: int,
+                max_estimators: int, early_stop: int) -> dict:
+    """Grid over max_depth x learning_rate, selected on validation MSE."""
+    best = None
+    for candidate_index, (depth, rate) in enumerate(
+        itertools.product((2, 3, 4), (0.03, 0.07))
+    ):
+        params = {
+            "max_depth": depth, "learning_rate": rate, "min_child_weight": 1,
+            "subsample": 0.8, "colsample_bytree": 0.8, "reg_lambda": 1.0,
+        }
+        candidate = _make_xgb(params, max_estimators, seed + candidate_index, early_stop)
+        candidate.fit(train_x, train_y, eval_set=[(valid_x, valid_y)], verbose=False)
+        prediction = candidate.predict(valid_x)
+        valid_mse = float(np.mean(np.square(prediction - valid_y)))
+        rounds = int(getattr(candidate, "best_iteration", max_estimators - 1)) + 1
+        result = {
+            "params": params,
+            "n_estimators": max(1, rounds),
+            "validation_mse": valid_mse,
+            "candidate_index": candidate_index,
+        }
+        if best is None or valid_mse < best["validation_mse"]:
+            best = result
+    if best is None:
+        raise RuntimeError("XGBoost tuning grid produced no candidate")
+    return best
+
+
+def run_xgb(dataset: str, batch, small_n, save_dir: Path, seed: int,
+            max_estimators: int = 1000, early_stop: int = 40) -> str:
+    train_paths, test_paths = _xgb_battery_paths(dataset, batch)
+    if small_n:
+        train_paths = train_paths[:small_n]
+    train_x, train_y, valid_x, valid_y, test_x, test_y = _xgb_split(
+        dataset, batch, train_paths, test_paths
+    )
+    best = _select_xgb(train_x, train_y, valid_x, valid_y, seed, max_estimators, early_stop)
+    model = _make_xgb(best["params"], best["n_estimators"], seed)
+    model.fit(train_x, train_y, verbose=False)
+    np.save(save_dir / "true_label.npy", test_y.reshape(-1))
+    np.save(save_dir / "pred_label.npy", model.predict(test_x).reshape(-1, 1))
+    return (
+        "train_rows={} valid_rows={} rounds={} depth={} lr={} valid_mse={:.8f}".format(
+            len(train_y), len(valid_y), best["n_estimators"],
+            best["params"]["max_depth"], best["params"]["learning_rate"],
+            best["validation_mse"],
+        )
     )
 
 
-def run_gpr_transfer(src_loaders: Dict[str, object], ft_loaders: Dict[str, object],
-                     save_dir: Path, seed: int, max_rows: int = 6000) -> str:
-    """Zero-shot prediction from the source fit, then 'adaptation' by joint
-    refit on source(capped) + 1-battery target data."""
-    x_train, y_train = _collect_xy(src_loaders["train"])
-    note = f"src_rows={len(y_train)}"
-    if len(y_train) > max_rows:
-        rng = np.random.RandomState(seed)
-        idx = rng.choice(len(y_train), size=max_rows, replace=False)
-        x_train, y_train = x_train[idx], y_train[idx]
-        note += f" (subsampled to {max_rows})"
+def run_xgb_transfer(source: str, source_batch, target: str, target_batch,
+                     save_dir: Path, seed: int, max_estimators: int = 1000,
+                     early_stop: int = 40, ft_rounds: int = 300,
+                     ft_early_stop: int = 20) -> str:
+    """Source fit, zero-shot predictions on the target cells, then continue the
+    booster on the single target calibration battery."""
+    source_train, source_test = _xgb_battery_paths(source, source_batch)
+    target_train, target_test = _xgb_battery_paths(target, target_batch)
 
-    gpr = _make_gpr(seed).fit(x_train, y_train)
-    x_test, y_test = _collect_xy(ft_loaders["test"])
-    pred = gpr.predict(x_test).reshape(-1, 1)
-    np.save(save_dir / "src_only_true_label.npy", y_test.reshape(-1))
-    np.save(save_dir / "src_only_pred_label.npy", pred)
-
-    x_ft, y_ft = _collect_xy(ft_loaders["train"])
-    gpr_ft = _make_gpr(seed).fit(
-        np.concatenate([x_train, x_ft]), np.concatenate([y_train, y_ft])
+    src_x, src_y, src_valid_x, src_valid_y, _, _ = _xgb_split(
+        source, source_batch, source_train, source_test
     )
-    pred_ft = gpr_ft.predict(x_test).reshape(-1, 1)
-    np.save(save_dir / "true_label.npy", y_test.reshape(-1))
-    np.save(save_dir / "pred_label.npy", pred_ft)
-    return note + f" +ft_rows={len(y_ft)}"
+    best = _select_xgb(src_x, src_y, src_valid_x, src_valid_y, seed, max_estimators, early_stop)
+    source_model = _make_xgb(best["params"], best["n_estimators"], seed)
+    source_model.fit(src_x, src_y, verbose=False)
+
+    ft_x, ft_y, ft_valid_x, ft_valid_y, test_x, test_y = _xgb_split(
+        target, target_batch, target_train[:1], target_test
+    )
+    np.save(save_dir / "src_only_true_label.npy", test_y.reshape(-1))
+    np.save(save_dir / "src_only_pred_label.npy",
+            source_model.predict(test_x).reshape(-1, 1))
+
+    target_model = _make_xgb(best["params"], ft_rounds, seed + 10000, ft_early_stop)
+    target_model.fit(
+        ft_x, ft_y, eval_set=[(ft_valid_x, ft_valid_y)],
+        xgb_model=source_model.get_booster(), verbose=False,
+    )
+    np.save(save_dir / "true_label.npy", test_y.reshape(-1))
+    np.save(save_dir / "pred_label.npy", target_model.predict(test_x).reshape(-1, 1))
+    return (
+        "src_rows={} src_rounds={} ft_rows={} ft_rounds={}".format(
+            len(src_y), best["n_estimators"], len(ft_y),
+            target_model.get_booster().num_boosted_rounds(),
+        )
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -347,7 +511,8 @@ def main() -> None:
     p.add_argument("--seed_base", type=int, default=0,
                    help="seed of repeat k is seed_base + k")
     p.add_argument("--epochs", type=int, default=200)
-    p.add_argument("--gpr_max_rows", type=int, default=6000)
+    p.add_argument("--xgb_max_estimators", type=int, default=1000)
+    p.add_argument("--xgb_early_stop", type=int, default=40)
     args = p.parse_args()
 
     raw_models = args.models
@@ -385,6 +550,13 @@ def main() -> None:
                     exp_dir.mkdir(parents=True, exist_ok=True)
                     _set_seed(args.seed_base + exp)
                     t0 = time.time()
+                    if model == "XGBOOST":
+                        note = run_xgb(dataset, batch, small_n, exp_dir,
+                                       seed=args.seed_base + exp,
+                                       max_estimators=args.xgb_max_estimators,
+                                       early_stop=args.xgb_early_stop)
+                        print(f"  done Experiment{exp} in {time.time()-t0:.1f}s  {note}", flush=True)
+                        continue
                     # a namespace stub with the attributes the dataloader touches
                     stub = argparse.Namespace(
                         batch_size=256, normalization_method="min-max",
@@ -399,13 +571,8 @@ def main() -> None:
                         loaders = make_loaders_for_small(dataset, batch, small_n, stub)
                     else:
                         loaders = make_loaders_for_phase(dataset, batch, stub)
-                    if model == "GPR":
-                        note = run_gpr(loaders, exp_dir, seed=args.seed_base + exp,
-                                       max_rows=args.gpr_max_rows)
-                        print(f"  done Experiment{exp} in {time.time()-t0:.1f}s  {note}", flush=True)
-                    else:
-                        run_torch_baseline(model, loaders, exp_dir, dataset, epochs=args.epochs)
-                        print(f"  done Experiment{exp} in {time.time()-t0:.1f}s", flush=True)
+                    run_torch_baseline(model, loaders, exp_dir, dataset, epochs=args.epochs)
+                    print(f"  done Experiment{exp} in {time.time()-t0:.1f}s", flush=True)
 
     if args.phase in ("transfer", "all"):
         for src_ds, src_b, tgt_ds, tgt_b in TRANSFER_PAIRS:
@@ -422,6 +589,14 @@ def main() -> None:
                     exp_dir.mkdir(parents=True, exist_ok=True)
                     _set_seed(args.seed_base + exp)
                     t0 = time.time()
+                    if model == "XGBOOST":
+                        note = run_xgb_transfer(
+                            src_ds, src_b, tgt_ds, tgt_b, exp_dir,
+                            seed=args.seed_base + exp,
+                            max_estimators=args.xgb_max_estimators,
+                            early_stop=args.xgb_early_stop)
+                        print(f"  done Experiment{exp} in {time.time()-t0:.1f}s  {note}", flush=True)
+                        continue
                     stub = argparse.Namespace(
                         batch_size=256, normalization_method="min-max",
                         log_dir=None, save_folder=None,
@@ -456,19 +631,15 @@ def main() -> None:
                         "valid": src_loaders["valid"],
                         "test": ft_loaders["test"],
                     }
-                    if model == "GPR":
-                        note = run_gpr_transfer(src_loaders, ft_loaders, exp_dir,
-                                                seed=args.seed_base + exp,
-                                                max_rows=args.gpr_max_rows)
-                        print(f"  done Experiment{exp} in {time.time()-t0:.1f}s  {note}", flush=True)
-                    else:
-                        run_torch_baseline(model, loaders, exp_dir, dataset=src_stub_batch,
-                                           epochs=args.epochs, ft_loaders=ft_loaders)
-                        print(f"  done Experiment{exp} in {time.time()-t0:.1f}s", flush=True)
+                    run_torch_baseline(model, loaders, exp_dir, dataset=src_stub_batch,
+                                       epochs=args.epochs, ft_loaders=ft_loaders)
+                    print(f"  done Experiment{exp} in {time.time()-t0:.1f}s", flush=True)
 
     manifest = dict(phase=args.phase, models=models, repeats=args.repeats,
                     datasets=args.datasets, out=str(out_root),
-                    seed_base=args.seed_base, gpr_max_rows=args.gpr_max_rows)
+                    seed_base=args.seed_base,
+                    xgb_max_estimators=args.xgb_max_estimators,
+                    xgb_early_stop=args.xgb_early_stop)
     (out_root / "manifest.json").write_text(
         __import__("json").dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8"
     )

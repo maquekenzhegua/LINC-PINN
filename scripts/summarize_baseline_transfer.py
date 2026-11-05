@@ -28,7 +28,7 @@ if str(SCRIPT_DIR) not in sys.path:
 
 import evaluate as ev  # noqa: E402
 
-BASELINE_MODELS = ["LSTM", "GRU", "CNN", "MLP", "GPR"]
+BASELINE_MODELS = ["LSTM", "GRU", "CNN", "MLP", "XGBOOST"]
 MAIN_MODELS = ["adaptive", "orig"]
 
 

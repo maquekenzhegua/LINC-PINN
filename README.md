@@ -60,7 +60,7 @@ versions pinned in `requirements.txt`.
 | scikit-learn | 1.6.1 |
 | scipy | 1.10.1 |
 | matplotlib | >=3.5 |
-| xgboost | 1.7.6 |
+| xgboost | 2.1.4 |
 | pytest | 8.x (unit tests only) |
 
 # 2. Installation guide
@@ -142,8 +142,13 @@ $PY scripts/reproduce.py --phase small --model both --repeats 10 --out results/r
 # Table 4: directed transfer, six pairs, 10 repeats
 $PY scripts/transfer_eval.py --repeats 10 --out results/transfer
 
-# External baselines (MLP, CNN, XGBoost, GRU, LSTM) under the same protocol
+# External baselines (MLP, CNN, XGBoost, GRU, LSTM) under the same protocol.
+# XGBoost reads the flat 17-dim row on a per-battery chronological 80/20 split;
+# the four neural baselines keep the pooled split of the loaders.
 $PY scripts/baselines.py --phase all --models all --repeats 10 --out results/baselines
+
+# The shipped XGBoost arm alone, one repeat, to check the wrapper end to end
+$PY scripts/baselines.py --phase small --datasets HUST --models XGBOOST --repeats 1 --out /tmp/xgb_check
 
 # Table 8 ablations, each 10 repeats
 $PY scripts/reproduce.py --phase small --model adaptive --repeats 10 --out results/ablation/no_operator --operator_weight 0.0
@@ -231,6 +236,16 @@ the four `main_*.py` entry points default to 256 to match.
 The five external regressors use a per-battery chronological 80/20 split, while
 the two physics-informed estimators use a pooled random split. This asymmetry
 is disclosed in the Limitations of the manuscript.
+
+The XGBoost arm reads the flat 17-dimensional row - the same input contract as
+`Model/Compare_Models.py`, not a sequence window - and is the one baseline that
+does not share the 200-epoch schedule. It is tuned on validation MSE over
+`max_depth` in {2, 3, 4} and `learning_rate` in {0.03, 0.07} with early stopping,
+then refit for the selected number of boosting rounds on the full training
+block. Truncation of that grid and of the boosting rounds is fixed by
+`--xgb_max_estimators` and `--xgb_early_stop`. In the transfer phase the source
+booster is continued on the single target calibration battery; the zero-shot
+source predictions are kept as `src_only_*.npy`.
 
 ## 4.4 Differences from upstream PINN4SOH
 

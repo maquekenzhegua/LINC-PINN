@@ -180,7 +180,7 @@ def main():
     ap.add_argument("--datasets", nargs="*", default=None)
     ap.add_argument("--models", nargs="*", default=None,
                     help="model directory names to aggregate (default: orig adaptive; "
-                         "add LSTM GRU CNN MLP GPR for the baseline suite)")
+                         "add LSTM GRU CNN MLP XGBOOST for the baseline suite)")
     args = ap.parse_args()
 
     in_root = (PROJECT_ROOT / args.in_root) if not Path(args.in_root).is_absolute() else Path(args.in_root)
